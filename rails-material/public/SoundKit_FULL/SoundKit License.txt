@@ -1,0 +1,36 @@
+SoundKit License 
+Let’s all be adults here. We want you to get the most out of the SoundKit royalty free sound effects library. So if we can all just follow a few simple rules, we can make the world a better place, or at least make it sound better. By purchasing the SoundKit library, you need to agree to a few ground rules.
+
+
+WHAT YOU CAN DO:
+Use sounds for personal and commercial projects
+Use sounds for multiple projects
+Use sounds for yourself or on behalf of a client
+Upload/Embed sounds into project files and code accessible by others
+Alter sounds as you see fit for your projects
+
+WHAT YOU CAN’T DO
+Resell, sublicense, repackage, or distribute sounds on their own
+Give the sounds to your buddies when no one is looking
+Leap tall buildings in a  single bound
+
+
+See, that was pretty easy. If you have any questions about use, or if you’d like to purchase a multiuser/enterprise license, please contact us directly at beepboop@soundkit.io
+
+Now, here are a few more legal details just so no one gets their feelings hurt.
+
+
+BORING LEGAL DETAILS:
+1. Copyright
+All elements of the SoundKit website and SoundKit sound effects library including but not limited to, the SoundKit name, logo, and individual sounds are copyrights of Dunk Tank LLC. The agreement serves as a worldwide non-exclusive license to use the sound effects only, and no other elements of the SoundKit brand. Use of SoundKit sounds does not constitute an endorsement of user’s products by Dunk Tank LLC.
+2. Disclaimer and Limited Warranty
+Dunk Tank LLC warrants the Product to be free from defects in materials and workmanship under normal use for a period of fourteen (14) days from the date of delivery as shown on your receipt. Dunk Tank LLC's entire liability and your exclusive remedy as to a defective product shall be, at Dunk Tank LLC's option, either return of purchase price or replacement of any such product that is returned to Dunk Tank LLC with a copy of the invoice. Dunk Tank LLC shall have no responsibility to replace the product or refund the purchase price if failure results from accident, abuse or misapplication, or if any product is lost or damaged due to theft, fire, or negligence. Any replacement product will be warranted for fourteen (14) days. This warranty gives you specific legal rights. You may have other rights, which vary from state to state.
+EXCEPT AS EXPRESSLY PROVIDED ABOVE, THE PRODUCT, IS PROVIDED “AS IS”. DUNK TANK LLC MAKES NO WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+The entire risk as to the quality and performance of the Product rests upon you. Dunk Tank LLC makes no warrant that the functions contained in the Product will meet your requirements or that the use of the product will be uninterrupted or error free.
+DUNK TANK LLC SHALL NOT  BE LIABLE FOR ANY DIRECT, INDIRECT, CONSEQUENTIAL, OR INCIDENTAL DAMAGES (INCLUDING DAMAGES FROM LOSS OF BUSINESS PROFITS, BUSINESS INTERRUPTION, LOSS OF BUSINESS INFORMATION, AND THE LIKE) ARISING OUT OF THE USE OF OR INABILITY TO USE THE PRODUCT EVEN IF DUNK TANK LLC HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+Because some states do not allow the exclusion or limitation of liability for consequential or incidental damages, the above limitation may not apply to you.
+3. Governing Law
+This agreement is governed by the laws of the United States of America and the State of Georgia.
+
+
+That’s it, really. We hope you enjoy SoundKit.

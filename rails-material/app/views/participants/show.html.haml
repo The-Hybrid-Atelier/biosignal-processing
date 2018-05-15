@@ -1,0 +1,25 @@
+%p#notice= notice
+
+%p
+  %b Study:
+  = @participant.study_id
+%p
+  %b Userkey:
+  = @participant.userkey
+
+-@participant.captures.each do |capture|
+  - if not capture.file.file.nil?
+    - if ["mp4"].include?(capture.mime_type)
+      %video{:height => "250px", :autoplay => "", :loop => "", :muted => "muted"}
+        %source{:src => capture.file_url, :type => "video/webm"}
+        Your browser does not support HTML5 video tag.
+    - elsif ["webm"].include?(capture.mime_type)
+      %video{:height => "250px", :autoplay => "", :loop => "", :muted => "muted"}
+        %source{:src => capture.file_url, :type => "video/webm"}
+        Your browser does not support HTML5 video tag.
+    - else
+      = image_tag capture.file_url, :width => "100%"
+
+= link_to 'Edit', edit_participant_path(@participant)
+\|
+= link_to 'Back', participants_path

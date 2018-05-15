@@ -1,0 +1,22 @@
+
+- model_class = Capture
+.page-header
+  %h1=t '.title', :default => model_class.model_name.human.titleize
+
+%p
+  %strong= model_class.human_attribute_name(:file) + ':'
+  %br
+  - image_tag @capture.file_url(:standard)
+  %video{:height => "250px", :autoplay => "", :loop => "", :muted => "muted", :poster => @capture.file_url(:jpg)}
+    %source{:src => @capture.file_url(:webm).gsub('.gif', ".webm"), :type => "video/webm"}
+    %source{:src => @capture.file_url(:mp4).gsub('.gif', ".mp4"), :type => "video/mp4"}
+      Your browser does not support HTML5 video tag.
+      %a{:href => @capture.file_url(:full)} Click here to view original GIF
+%p
+  - @capture.tags.split(" ").each do |t|
+    %span.label.label-info= t
+
+
+= link_to t('.back', :default => t("helpers.links.back")), captures_path, :class => 'btn btn-default'
+= link_to t('.edit', :default => t("helpers.links.edit")), edit_capture_path(@capture), :class => 'btn btn-default'
+= link_to t('.destroy', :default => t("helpers.links.destroy")), capture_path(@capture), :method => "delete", :data => { :confirm => t('.confirm', :default => t("helpers.links.confirm", :default => 'Are you sure?')) }, :class => 'btn btn-danger'

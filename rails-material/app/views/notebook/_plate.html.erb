@@ -1,0 +1,23 @@
+:coffeescript
+  $ ->
+    $("#video-record-start").click ()->
+      console.log "START"
+      guide.send
+        to: "ipevo"
+        service: "video_record_start"
+      playSound("Air-Pop")
+    $("#video-record-stop").click ()->
+      guide.send
+        to: "ipevo"
+        service: "video_record_stop"
+      playSound("Air-Pop")
+.ui.bottom.attached.tab.segment{"data-tab" => "video"}
+  %h1.ui.header Video
+
+  #controls
+    %button#video-record-start.button.ui.red
+      %i.record
+      START
+    %button#video-record-stop.button.ui
+      %i.stop
+      STOP

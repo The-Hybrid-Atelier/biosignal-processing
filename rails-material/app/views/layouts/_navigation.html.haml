@@ -1,0 +1,86 @@
+
+.ui.borderless.main.menu
+  .ui.text.container
+    .header.item
+      Hybrid Atelier
+    %a.item{:href => "/", :name => "home"} Home
+    .ui.dropdown.item
+      Sensing Practice
+      %i.dropdown.icon
+      .menu
+        = link_to "Code Viz", sensing_codes_path, :class => "item"
+      
+    .ui.dropdown.item
+      Atelier
+      %i.dropdown.icon
+      .menu
+        = link_to "Annotator", material_annotator_path, :class => "item"
+        = link_to "Vision", material_vision_path, :class => "item"
+        = link_to "Converter", material_conversion_path, :class => "item"
+        = link_to "Notebook", notebook_guide_path, :class => "item"
+        = link_to "Debugging Notebook", notebook_debugging_path, :class => "item"
+    
+    
+    .ui.right.floated.dropdown.item
+      Heat Craft
+      %i.dropdown.icon
+      .menu
+        .ui.item
+          App
+          %i.dropdown.icon
+          .menu
+            %a.item{href: notebook_capture_path}
+              %i.camera.icon
+              Capture
+            %a.item{href: notebook_joule_path}
+              %i.fas.fa-bolt.icon
+              Design
+            %a.item{href: notebook_print_path}
+              %i.fas.fa-cut.icon
+              Assemble
+        .ui.item
+          Study
+          %i.dropdown.icon
+          .menu
+            = link_to "Captures", captures_path, :class => "item"
+            = link_to "Participants", participants_path, :class => "item"
+            = link_to "AtelierSetup", material_setup_path, :class => "item"
+            = link_to "Log", study_log_path, :class => "item"
+            = link_to "Notebook", notebook_guide_path, :class => "item"
+         
+- if false
+  - if user_signed_in?
+    Logged in as
+    = succeed "." do
+      %strong= current_user.email
+    = link_to 'Edit profile', edit_user_registration_path, :class => 'navbar-link'
+    |
+    %ul.nav.navbar-nav.navbar-right
+    %li
+      - if user_signed_in?
+        = link_to user_path(current_user), id: "admin-key", class: "unlocked" do 
+          = bglyph "user"
+          = current_user.name
+      - else
+        = link_to user_google_oauth2_omniauth_authorize_path , id: "admin-key" do 
+          LOGIN
+
+:css
+  .navbar{
+    background: #ffc20e;
+    border-color: #ffc20e;
+    border-radius: 0px;
+    font-weight: bold;
+  }
+  .navbar-default .navbar-nav > li > a{
+    color: #111;
+    font-size: 1.1em;
+  }
+  #logo {
+    position: relative;
+    top: -3px;
+  }
+  /* ACTIVE COLOR */
+  .navbar-default .navbar-nav > .active > a, .navbar-default .navbar-nav > .active > a:hover, .navbar-default .navbar-nav > .active > a:focus{
+    background: #ffae0e !important;
+  }

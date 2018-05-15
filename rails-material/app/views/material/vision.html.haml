@@ -1,0 +1,477 @@
+/ :coffeescript
+/   class LaunchController
+/     fillSlot: (pad, i)->
+/       slots = @svg.query
+/         class:"slots"
+/         id: pad
+/       slots = slots[0]  
+/       slot = slots.children[i]
+/       slot.filled = true
+/       slot.fillColor = "#00A8E1"
+/       slot.fillColor.alpha = 0.8
+/     togglePad: (i)->
+/       pad = @svg.query({class: "pad"})[i]
+/       if pad.active
+/         pad.active = not pad.active
+/       else 
+/         pad.active = true
+/       bg = pad.children[0]
+/       bg.fillColor = if pad.active then "red" else "white"
+/       bg.fillColor.alpha = 0.5
+/     toggleSlider: (i, val)->
+/       sliders = @svg.query
+/         class:"slider"
+/         id: i
+/       slider = sliders[0]
+/       scrubber = @svg.queryH slider, 
+/         class:"scrubber"
+/       scrubber = scrubber[0]
+/       range = @svg.queryH slider, 
+/         class:"range"
+/       range = range[0]
+/       n = range.length
+/       scrubber.set
+/         position: range.getPointAt(val * n)
+    
+/     toggleSlot: (i, val)->
+/       slots = @svg.query
+/         class:"slots"
+/         id: i
+/       slots = slots[0]
+/       idx = parseInt(val * 5)
+      
+/       _.each slots.children, (slot, i)->
+/         if i == idx
+/           slot.fillColor = "white"
+/           slot.fillColor.alpha = 1.0
+/         else if slot.filled
+/           slot.fillColor = "#00A8E1"
+/           slot.fillColor.alpha = 0.8
+/         else
+/           slot.fillColor = "white"
+/           slot.fillColor.alpha = 0.3
+/           slot.strokeColor = "white"
+/           slot.strokeWidth = 1
+/       return idx
+
+/     constructor: (ops)->
+/       scope = this
+/       slots = (pads)->
+/         pads = @query
+/             class: "pad"
+/         slot_template = @query
+/           class: "slots"
+/         slot_template = slot_template[0]
+/         slot_template.data = _.extend slot_template.data, 
+/           id: 0
+/         slot_distance = slot_template.position.getDistance(pads[0].bounds.topCenter)
+/         _.each pads.slice(1), (pad, i)->
+/           slot = slot_template.clone()
+/           slot.set
+/             data: _.extend slot.data, 
+/               id: i + 1
+/             position: pad.bounds.topCenter.clone().add(new paper.Point(0, -1 * slot_distance))
+/       sliders = (pads)->
+/         pads = @query
+/             class: "pad"
+/         slider_template = @query
+/           class: "slider"
+/         slider_template = slider_template[0]
+/         slider_template.data = _.extend slider_template.data, 
+/           id: 0
+/         slider_distance = slider_template.position.getDistance(pads[0].bounds.topCenter)
+/         _.each pads.slice(1), (pad, i)->
+/           slider = slider_template.clone() 
+/           slider.set
+/             data: _.extend slider.data, 
+/               id: i + 1
+/             position: pad.bounds.topCenter.clone().add(new paper.Point(0, -1 * slider_distance))
+
+/       comp_design = ()->
+/         slots.apply(this)
+/         sliders.apply(this)
+/         ops.onload(scope)
+        
+/       @svg = new MaterialManifest
+/         file: "/LaunchControl.svg"
+/         onsvgload: (svg)->
+/           comp_design.apply(this)
+          
+   
+
+/   window.app = 
+/     name: "Heat Vision Replay App"
+/     saveVideo: (blob)->
+      
+/     webcam: (videoElement, stream, i)->
+/       scope = this
+/       console.log 'Starting...'
+/       mediaRecorder = new MediaRecorder(stream)
+      
+/       url = window.URL or window.webkitURL
+/       videoElement.src = if url then url.createObjectURL(stream) else stream
+/       videoElement.play()
+/       videoElement.mediaRecorder = mediaRecorder
+    
+/       @chunks = []
+/       mediaRecorder.ondataavailable = (e) ->
+/         scope.chunks.push e.data  
+/       mediaRecorder.onerror = (e) ->
+/         console.log 'Error: ', e
+/       mediaRecorder.onwarning = (e) ->
+/         console.log 'Warning: ' + e
+/       mediaRecorder.onstart = ->
+/         console.log 'Started, state = ' + mediaRecorder.state
+/       mediaRecorder.onstop = ->
+/         console.log 'Stopped, state = ' + mediaRecorder.state
+/         blob = new Blob(scope.chunks, type: 'video/webm')
+/         scope.chunks = []
+/         videoURL = window.URL.createObjectURL(blob)
+/         source = $('<source>').attr
+/                 src: videoURL
+/                 type: "video/webm"
+/                 controls: true
+/               .appendTo(videoElement)
+/         scope.controller.fillSlot $(videoElement).data('id'), i
+/         scope.switchSource(videoElement, i, force=true)
+/         videoElement.mediaRecorder = null
+/       return mediaRecorder   
+/     sliderBehavior: (vid, e)->
+/       p = e.value / 128
+/       @controller.toggleSlider(e.track, p)
+/       if vid and vid.readyState > 0
+/         pos = p * vid.duration
+/         if pos >= vid.seekable.start(0) and pos <= vid.seekable.end(0)
+/           vid.currentTime = pos
+/     slotBehavior: (vid, e)->
+/       p = e.value / 128
+/       @slotSelect(vid, e.track, p)
+/     padBehavior: (vid, e)->
+/       # if e.value > 0
+/       #   $("#click4").mousedown()
+/       # else
+/       #   $("#click4").mouseup()
+/       if $(vid).attr('class') == "webcam"
+/         if e.value > 0
+/           $("#Air-Pop").mousedown()
+/           _.delay (()-> $("#Air-Pop").mouseup()), 200
+/           console.log "START RECORDING", vid.mediaRecorder
+/           vid.mediaRecorder.start()
+/           ctrl.led(e.track, "red")
+/         else
+/           console.log "STOP RECORDING"
+/           ctrl.led(e.track, "green")
+/           vid.mediaRecorder.stop()
+/           $("#Approval-Vibes").mousedown()
+/           _.delay (()-> $("#Approval-Vibes").mouseup()), 200
+/       else
+/         if e.value > 0
+/           @controller.togglePad(e.track) 
+          
+/           if vid
+/             if vid.paused
+/               vid.play()
+/               $("#Glass-Down").mousedown()
+/               _.delay (()-> $("#Glass-Down").mouseup()), 200
+/             else
+/               vid.pause()
+/               $("#Glass-Up").mousedown()
+/               _.delay (()-> $("#Glass-Up").mouseup()), 200
+/         else
+/           @active = vid
+          
+/         ctrl.led(e.track, "amber")
+/         turnoff = ()->
+/           ctrl.led(e.track, "off")
+/         _.delay turnoff, 500
+/     cursorBehavior: (vid, e)->
+/       vid = scope.active
+/       if vid
+/         switch e.direction
+/           when "up"
+/             v = $(vid).detach()
+/             $('.video-pad[data-id="0"]').html(v)
+/           when "down"
+/             v = $(vid).detach()
+/             $('.video-pad[data-id="1"]').html(v)
+/           when "left"
+/             v = $(vid).detach()
+/             $('.video-pad[data-id="2"]').html(v)
+/            when "right"
+/             v = $(vid).detach()
+/             $('.video-pad[data-id="3"]').html(v)
+/     debugMessage: (e)->
+/       console.log 'dataType: ' + e.dataType
+/       console.log 'track   : ' + e.track
+/       console.log 'value   : ' + e.value
+/       console.log 'channel : ' + e.channel
+/       console.log 'direction : ' + e.direction
+/     initLaunchControl: ()->
+/       scope = this
+/       $('#shade').hide()
+/       window.ctrl = new LaunchControl()
+/       ctrl.open().then ->
+/         ctrl.led 'all', 'amber'
+/         return
+/       ctrl.on 'message', (e) ->
+/         console.log e
+/         # scope.debugMessage(e)
+/         if not _.isUndefined(e.track)
+/           vid = $('video[data-id="'+ e.track+'"]').get(0)
+/         switch e.dataType
+/           when "knob1"
+/             scope.sliderBehavior(vid, e)
+/           when "knob2"
+/             scope.slotBehavior(vid, e)
+/           when "pad"
+/             scope.padBehavior(vid, e)
+/           when "cursor"
+/             scope.cursorBehavior(vid, e)
+
+/     initialize: ()->
+/       scope = this
+/       console.log "Initializing", @name
+/       @lastActive = ""
+/       @bindEvents()
+/       _.delay (()-> scope.initLaunchControl()), 1000
+
+/     bindEvents: ()->
+/       scope = this
+/       $('#shade').fadeOut()
+/       @paperLoad()
+/     slotSelect: (vid, i, val)->
+/       idx = @controller.toggleSlot(i, val)
+/       @switchSource(vid, idx)
+/     switchSource: (vid, i, force=false)->
+/       scope = this
+/       sources = $(vid).children("source")
+/       console.log "ACTIVATE", i
+/       if not force
+/         if scope.lastActive == $(vid).data('id') + ":" + i
+/           return 
+/         else
+/           scope.lastActive = $(vid).data('id') + ":" + i
+/       if sources[i]
+/         if vid.src != sources[i].src
+/           $("#Wood-Block").mousedown()
+/           _.delay (()-> $("#Wood-Block").mouseup()), 200
+          
+/           $(vid).attr 'src', sources[i].src
+/           $(vid).removeClass('webcam').parent().removeClass('webcam')
+/           vid.autoplay = false
+/       else
+/         if not $(vid).hasClass('webcam')
+/           $(vid).addClass('webcam').parent().addClass('webcam')
+/           vid.autoplay = true
+         
+/           _.delay (()-> $("#Sonar-Ping").mousedown()), 200
+/           _.delay (()-> $("#Sonar-Ping").mouseup()), 400
+          
+/           navigator.getUserMedia {video: true}, (stream)->
+/             vid.mediaRecorder = scope.webcam(vid, stream, i)
+/           ,(err)->
+/             console.log "ERROR", err
+            
+/     paperLoad: ()->
+/       paper = window.Utility.paperSetup("vision")
+/       paper.settings.handleSize = 8  
+
+/       loadVideos = (controller)->
+/         scope = this
+/         $.get "/user/1/captures", (data)->
+/           data = _.groupBy data, (capture)-> return capture.pad
+/           _.each _.range(0, 3), (pad)->
+/             td = $('<div>').attr('data-id', pad).addClass('video-pad')
+/             video = $('<video>').attr('data-id', pad).appendTo(td)
+/             $('#capture').append(td)
+
+/           _.each data, (captures, pad)-> 
+/             video = $('video[data-id="'+pad+'"]')
+/             _.each captures, (capture, i)->
+/               controller.fillSlot(capture.pad, capture.slot)
+/               source = $('<source>').attr
+/                   src: capture.video
+/                   type: "video/webm"
+/                   controls: true
+/                 .appendTo(video)
+
+/             video.append("Your browser does not support the video tag.")
+            
+/           _.each $('video'), (vid)->
+/             vid.controls = false
+
+/       @controller = new LaunchController
+/         onload: loadVideos
+
+   
+  
+      
+      
+        
+    
+/ $ ->    
+/   / window.video = $('video').get(0)
+/   / app.initialize()
+/   _.each $('.audio-btn'), (btn)->
+/     btn = $(btn)
+/     btn.easyAudioEffects
+/       # ogg : "/audio/"+$(btn).attr('id')+".ogg",
+/       mp3 : "/audio/"+$(btn).attr('file')+".wav"
+/       eventType : "click"
+/       playType : "oneShotPolyphonic"
+  
+
+/ .canvas-container
+/   %canvas#vision
+/   .btn-group-vertical#zoom
+/     %button#zoom-in.btn.btn-xs.btn-info
+/       = glyph "plus"
+/     %button#zoom-out.btn.btn-xs.btn-info
+/       = glyph "minus"    
+
+
+
+
+
+/ %canvas{style: "display:none;"}
+
+
+/#capture.row
+/ %tr
+/     %td{data: {id: 0}}
+/       %video.pause{data: {id: 0}}
+/         %source{src: "/videos/tree1_hoz.mp4", type:"video/mp4", controls: true}
+/         %source{src: "/videos/teal_spiral.mp4", type:"video/mp4", controls: true} 
+/         Your browser does not support the video tag.
+/     %td{data: {id: 1}}
+/       %video.pause{data: {id: 1}}
+/         %source{src: "/videos/tree2_hoz.mp4", type:"video/mp4", controls: true}
+/         %source{src: "/videos/teal_square.mp4", type:"video/mp4", controls: true} 
+/         Your browser does not support the video tag.
+/   %tr
+/     %td{data: {id: 2}}
+/     %td{data: {id: 3}}
+  
+:scss
+  .audio-btn{
+   /* display:none; */
+  }
+  $borderColor: #D3D3D3;
+  $arrowColor: #7A7A7A;
+  $subtleText: #80858B;
+
+  $activeBackground: #4573B9;
+  $activeText: #FFFFFF;
+  $activeSubtleText: #C5C5C5;
+  $activeArrowColor: #DDDDDD;
+  
+  $error: desaturate(#eb3941, 10%);
+  $errorBorder: darken(#eb3941, 20%);
+  $success: darken(#dff0d8, 30%);
+  $successText: white;
+
+  $formBlue: #3883fa;
+  $panelBackground: #F5F5F5;
+  $hoverText: #ECF1FA;
+  $eggshell: rgb(245, 244, 240);
+
+
+  html, body{
+    width: 100%; 
+    height: 100%;
+    overflow: hidden;
+    /*background: url("/station.jpg") no-repeat center green;
+    background-size: cover;
+    */
+  }
+  
+  #capture{
+    display: flex;
+    flex-flow: row nowrap;
+    # overflow-y: hidden;
+    overflow-x: scroll;
+    height: 400px;
+
+    video{
+      /* height: auto; */
+      /* min-height: 200px; */
+      height: 300px;
+      width: 100%;
+      &.webcam{
+        border: 2px solid green;
+      }
+    }
+    .video-pad{
+      width: 500px;
+      height: 100%;
+      padding: 0 !important;
+      position: relative;
+      &.webcam::before {
+        content: "LIVE";
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        color: white;
+        text-shadow: 1px 1px black;
+        z-index: 1000;
+      }
+    }
+
+  }
+
+    
+  
+
+  #settings{
+    padding: 15px;
+    display: none;
+  }
+  #zoom{
+    position: absolute;
+    top: 15px;
+    right: 15px;
+  }
+  button.note{
+    outline: none;
+    &:active{
+      outline: none !important;
+    } 
+    &:focus{
+      background: white !important;
+      outline: none !important;
+    }
+    
+    &.active{
+      background: $formBlue !important;
+      color: white;
+      &:active{
+      background: $formBlue;
+      color: white;
+      }
+      &:hover{
+        background: $formBlue;
+        color: white;
+      }
+      &:focus{
+        outline: none !important;
+        background: $formBlue !important;
+        color: white !important;
+      }
+    }
+  }
+
+  .canvas-container{
+    bottom: 100px;
+    # width: 100%;
+    # height: 100%;
+    width: 100%;
+    height: 300px;
+    position: absolute;
+    z-index: 100;
+  }
+  canvas{
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+  }
+  

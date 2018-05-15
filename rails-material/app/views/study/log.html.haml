@@ -1,0 +1,37 @@
+:coffeescript
+	$ ->
+		$('#user').val(window.participant_id)
+		@logger = new Atelier("all", "scanner")
+		log = []
+		@logger.addService "log", (task)->
+			console.log "log", task
+			info = _.pick task, "timestamp", "to", "from", "service", "data"
+
+			switch task.service
+				when "image"
+					info.data = _.omit info.data, "image"
+
+			log.push(info)
+			$('#log').val(JSON.stringify(log))
+			autoadvance_textarea()
+		$('#save').click ()->
+			data = 
+				log: log
+				user: $("#user").val()
+
+			blob = new Blob([JSON.stringify(data)], {type: "text/json;charset=utf-8"})
+			saveAs(blob, $("#user").val() + ".json")
+
+	autoadvance_textarea = ()->
+		t = $('textarea')[0];
+		t.scrollTop = t.scrollHeight;
+
+%h1.ui.heading Study Log
+.ui.form
+	.ui.field
+		%h4.ui.heading Participant ID
+		%input#user{type: "text"}
+	.ui.field
+		%h4.ui.heading Log
+		%textarea#log{rows: 20}
+	%button#save.ui.primary.button Save

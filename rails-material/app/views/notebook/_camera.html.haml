@@ -1,0 +1,173 @@
+:coffeescript
+  $ ->    
+    app.initialize()
+
+  window.app = 
+    initialize: ()->
+      @loadImages()
+      @bindEvents()
+      @ws = new WebStorage()
+      if not @ws.includes('snap')
+        @ws.set('snap', 0)
+
+    bindEvents: ()->
+      scope = this
+
+      window.guide = new Atelier("guide", "scanner")
+
+      guide.addService "pad", (task)->
+        if task.data.track == 0 and task.data.value > 0
+          $("#capture").click()
+      guide.addService "image", (task)->
+        scope.imageHandler(task)
+      guide.addService "video", (task, event)->
+        console.log "PRCOESSSING VIDEO"
+        vid = $("#video-gallery video.template").clone().removeClass("template")
+        $(vid).find('source').attr("src", task.data.file)
+        $("#video-gallery").append(vid)
+      guide.addService "status", (task)->
+        console.log task.data
+      guide.addService "temperature_read", (task)->
+        $('#reading').html(task.data + "<sup class='farenheit'>&deg; F</sup>")
+
+      $("#capture").click ()->
+        guide.send
+          to: "ipevo"
+          service: "capture"
+        $(this).addClass("loading")
+        playSound(window.take_picture)
+      
+      $('.menu .item').click ()->
+        guide.send
+          to: "log"
+          data: $(this).data().tab
+      $('button#expandgallery').click ()->
+        $(this).find('i').toggleClass('expand').toggleClass('compress')
+        $('#picture.gallery').toggleClass('expanded')
+    loadImages: ()->
+      api = "/participants/"+window.participant_id+"/captures.json"
+      $.get api, (data)->
+        _.each data, (img)->
+          img = $("<img width=238 height=134/>").attr('src', img.file.url).click ()->
+            ctx = $('canvas')[0].getContext('2d')
+            ctx.drawImage(this, 0, 0, $('canvas').attr('width'), $('canvas').attr('height'))
+            $(this).addClass('selected').siblings().removeClass('selected')
+            playSound(window.tap)
+          $('#picture.gallery').append(img)
+
+    imageHandler: (task)->
+      i = new Image()
+
+      i.onload = ()->
+        ctx = $('canvas')[0].getContext('2d')
+        ctx.drawImage(this, 0, 0, $('canvas').attr('width'), $('canvas').attr('height'))
+      i.src = task.data.image
+      $(i).attr
+        width: 238
+        height: 134
+      $(i).click ()->
+        ctx = $('canvas')[0].getContext('2d')
+        ctx.drawImage(this, 0, 0, $('canvas').attr('width'), $('canvas').attr('height'))
+        playSound(window.tap)
+        
+      $('#picture.gallery').prepend(i)
+      $(i).addClass('selected').siblings().removeClass('selected')
+      $('#capture').removeClass("loading")
+
+
+
+
+
+.ui.bottom.attached.tab.segment.full{"data-tab" => "camera"}
+  #conversion   
+    %canvas{width: 1280, height: 720}
+  #controls
+    %button.button.ui.primary#capture{"data-loading-text": "Loading..."}
+      = glyph "camera"
+      CAPTURE
+  #picture.gallery
+    /.controls
+    /  %button#expandgallery.ui.button.circular.icon
+    /    %i.icon.expand   
+
+
+
+  
+:scss
+  
+  .full{
+    width: 100%;
+    height: 100%;
+  }
+  .audio-btn{
+    display:none;
+    z-index: 100;
+  }
+
+  #conversion{
+    width: 100%;
+    height: calc(100% - 50px);
+    border: 5px solid red !important;
+    display: flex;
+    flex-flow: nowrap column;
+    justify-content: center;
+    align-items: center;
+    overflow:hidden;
+    background: black;
+  }
+  #picture.gallery.expanded{
+    height: 907px;
+    align-items: flex-start;
+  }
+  #picture.gallery{
+    position: fixed;
+    bottom: 0px;
+    left: 0;
+    width: 100%;
+    # padding: 8px 8px;
+    height: 150px;
+    display: flex;
+    flex-flow: wrap row;
+    justify-content: flex-start;
+    overflow-y: scroll;
+    align-items: center;
+    background: green;
+    canvas{
+      background: purple;
+      margin: 0px 0 0 8px;
+    }
+    img.selected{
+      border: 8px solid #00A8E1;    
+    }
+  }
+  #controls{
+    /* background: orange; */
+    padding: 15px;
+    width: 100%;
+    position: fixed;
+    top: 70px;
+    left: 0;
+    z-index: 1000;
+    height: 60px;
+    display: flex;
+    flex-flow: wrap row;
+    justify-content: center;
+    align-items: flex-end;
+  }
+  .controls{
+    float: right;
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 40px;
+    height: 40px;
+  }
+  
+
+ 
+ 
+
+
+  
+  
+  

@@ -1,0 +1,41 @@
+:coffeescript
+    initLaunchControl = ()->
+        window.ctrl = new LaunchControl()
+        console.log(window.ctrl)
+        ctrl.open().then ->
+            ctrl.led 'all', 'amber'
+        ctrl.on 'message', (e) ->
+            dataType = e["dataType"]
+            track = e["track"]
+            if dataType == "pad" and track == 0
+                designer.send
+                    to: "ipevo"
+                    service: "capture"
+
+    $ ->
+        window.designer = new Atelier("designer", "scanner")
+        designer.addService "image", (task)->
+            i = new Image()
+            i.onload = ()->
+                ctx = $('canvas')[0].getContext('2d')
+                ctx.drawImage(this, 0, 0, $('canvas').attr('width'), $('canvas').attr('height'))
+            i.src = task.data
+
+        $('#capture').click ()->
+            designer.send
+                to: "ipevo"
+                service: "capture"
+                
+        initLaunchControl()
+            
+
+%canvas{width: 600, height: 400}
+#controls
+%button#thermocamera.btn.btn-primary#capture
+    = glyph "camera"
+    CAPTURE
+
+:scss
+    canvas{
+        border: 1px solid black;
+    }

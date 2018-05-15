@@ -1,0 +1,23 @@
+:scss
+  /* iPad Web Application */
+  html, body{ position: fixed;}
+  html{ font-size: 8pt;}
+
+.ui.three.top.attached.steps.small
+
+  %a.step{href: notebook_capture_path, class: active_class(notebook_capture_path)}
+    %i.camera.icon
+    .content
+      .title Capture Artwork
+      .description Use the network camera to take a picture.
+  %a.step{href: notebook_joule_path, class: active_class(notebook_joule_path)}
+    %i.fas.fa-bolt.icon
+    .content
+      .title Generate Circuity
+      .description Create joule heaters designs.
+  %a.step{href: notebook_print_path, class: active_class(notebook_print_path)}
+    %i.fas.fa-cut.icon
+    .content
+      .title Print and Assemble
+      .description Print you heater and assemble your thermopainting.
+  

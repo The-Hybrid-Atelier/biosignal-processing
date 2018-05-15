@@ -1,0 +1,98 @@
+#trc-select.ui.dropdown.selection.upward.compact
+  .text Thermoreactive Composite
+  %i.dropdown.icon
+  .menu
+    .header Liquid Crystal
+    .item{value: 8} TLC Matte Paper[8 J]
+    .item{value: 12} TLC Cloth[12 J]
+    .item{value: 16} TLC Ceramics [16 J]
+    .divider
+    .header Thermochromic Pigment
+    .item{value: 55} TP Watercolor Paper [55 J]
+    .divider
+    .header Thermochromic PLA
+    .item{value: 757} TPLA 3 mm wall [757 J]
+    .item{value: 252} TPLA 1 mm wall [252 J]
+.pusher.ziptie-container
+  = render partial: "steps"  
+  .canvas-area.blurring
+    .canvas-container
+      .tools
+        %button.button.ui.massive.circular.icon.red.heat{name: "heat_tool"}
+          %i.icon.fire
+        %button.button.ui.massive.circular.icon.red.eraser{name: "eraser_tool"}
+          %i.icon.eraser
+        %button.button.ui.massive.circular.icon.red.cut{name: "cut_tool"}
+          %i.icon.cut
+        %button.button.ui.red.icon.circular.massive.tool.pan{name: "pan_tool"}
+          %i.icon.hand.rock
+        %buttton.button.ui.icon.circular.massive.tracker#add_power
+          %img.icon.image{src: "/icons/immaterial_add_power.png"}
+      .heat-options.ui.buttons.vertical.hide
+        %button.button.ui.large.circular.icon.env.blue{name:"fill_type", value: "polygon-build"}
+          %i.icon.moon.outline
+        %button.button.ui.large.circular.icon.env{name: "fill_type", value:"line-build"}
+          %i.icon.pencil.alternate
+      #modes.ui.buttons.icon
+        %button.button.ui.icon.massive.tracker#mode.mode{name: "power"}
+          %i.fas.fa-bolt.icon
+        %button.button.ui.icon.massive.tracker#mode.mode{name: "circuit"}
+          %i.icon.shekel.sign
+        %button.button.ui.icon.massive.tracker#mode.mode{name: "print"}
+          %i.icon.print
+        %button.button.ui.icon.massive.tracker#mode.mode{name: "simulate"}
+          %i.icon.hourglass.half
+      #playbar
+        .ui.buttons.icon
+          %button.button.ui.icon.simulate#play
+            %i.icon.play
+          %button.button.ui.icon.simulate#stop.blue
+            %i.icon.stop
+
+        %button.button.ui.icon.labeled.simulate
+          %i.icon.time
+          .span.timestamp 0:00  
+        .ui.left.pointing.red.basic.label.speed
+          15X 
+
+      #project-meta.ui.form.top-row              
+        .ui.buttons
+          %button.button.ui.icon.circular.massive.tracker#annotate
+            %i.icon.comment
+          
+        .ui.buttons 
+          %button.button.ui.green.icon.circular.massive.tracker#save
+            %i.icon.save
+          %button.button.ui.massive.circular.icon.tracker#clear
+            %i.icon.trash  
+        %button.button.ui.massive.circular.icon.grey.tracker#export
+          %i.icon.download 
+      
+      #zoom-tools.ui.buttons.vertical 
+        %button.button.ui.blue.icon.circular.massive.tracker#zoomin
+          %i.icon.zoom.in
+        %button.button.ui.blue.icon.circular.massive.tracker#zoomout
+          %i.icon.zoom.out
+        %button.button.ui.blue.icon.circular.massive.tracker#recenter
+          %i.icon.crosshairs
+      %canvas#markup
+      %button.button.ui.massive.circular.icon#artwork-toggle{state: "none"}
+        %i.icon.image
+      
+      %button.button.ui.massive.circular.icon.red#magnetize
+        %i.icon.linkify
+      / %button.button.ui.massive.circular.icon.blue.tracker#undo
+      /   %i.icon.undo
+      / %button.button.ui.massive.circular.icon.blue.tracker#redo
+      /   %img{src: "/redo.png", width: 20}
+    .ui.dimmer
+      .content
+        %h2.ui.inverted.icon.header
+          %i.print.icon
+          Generating Heater Circuit!
+     
+    
+
+        
+
+      

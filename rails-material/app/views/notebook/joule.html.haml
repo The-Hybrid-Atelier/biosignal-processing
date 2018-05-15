@@ -1,0 +1,665 @@
+:coffeescript
+  $ ->
+    start = performance.now()
+    splashLoad ()->
+      window.simulator = new Simulator()
+      window.thermopainting = new Thermopainting()
+      
+      # LOAD METADATA
+      loadCaptureMetadata()
+      loadBackdrop(dimensions)
+      enableGlobalTools()
+      
+      # COMPUTATIONAL MECHANISMS
+      window.tracker = new Tracker()
+      thirdPartyLibInit()
+
+      mode = if ws.includes("mode") then ws.get("mode") else Environment.mode
+      Environment.mode = mode
+      
+      $('.mode[name="'+Environment.mode+'"]').click()
+      
+      $('#trc-select').dropdown
+        onChange: (value, text, $selectedItem)->
+          ws.set("material", value)
+          val = $selectedItem.attr('value')
+          Environment.thermoreactive_composite = 
+            name: text
+            activationEnergy: parseInt(val)
+          Environment.update()
+          scale.refresh()
+      
+      material = if ws.includes("material") then ws.get("material") else "tp watercolor paper [55 j]"
+      $('#trc-select').dropdown("set selected", material) 
+      
+  
+  splashLoad = (func)->
+    # $(".ui.page").dimmer('show')
+    func()
+    # _.delay (()->$(".ui.page").dimmer('hide')), 100
+      
+
+  thirdPartyLibInit = ()->
+    # $('.ui.embed').embed()
+    alertify.set('notifier','position', 'bottom-right')
+    ws.setClean tracker.clean
+ 
+  
+  window.loadBackdrop = (dimensions)->
+    # PAPER SETUP
+    markup = $('canvas#markup')[0]
+    paper.install window
+    heatpaper = new paper.PaperScope()
+    heatpaper.setup(markup)
+    heatpaper.settings.handleSize = 10
+    loadCustomLibraries()
+  
+
+     
+    # CAPTURE PIPELINE
+  loadCaptureMetadata = ()->
+    # LOAD IMAGE 
+    if ws.includes(participant_id+"_segmented")
+      $('#captured-scene img').attr
+        src: ws.get(participant_id+"_segmented")
+    else
+      $('#captured-scene img').attr
+        src: "/missing.png"
+
+    # LOAD DIMENSIONS
+    if ws.includes(participant_id+"_dimensions")
+      dimensions = JSON.parse ws.get(participant_id+"_dimensions")
+      $('#dimensions').html(dimensions.width+ " " + dimensions.units+ " x " + dimensions.height+ " " + dimensions.units)
+      window.dimensions = dimensions
+  
+  enableGlobalTools = ()->
+    window.heat_tool = new paper.Tool
+      name: 'heat_tool'
+      dom: $('.heat')
+      minDistance: 10
+      maxDistance: 45
+      minArea: 150
+      eraser_on: ()-> return not $('#magnetize').hasClass('red') 
+      activate2: ()-> 
+        @clear()
+        $('.heat-options').show()
+      clear: ()->
+        lb = paper.project.getItems {name: "lb"}
+        le = paper.project.getItems {name: "le"}
+        old = _.flatten [lb, le]
+        _.each old, (c)-> c.remove()
+      onMouseDown: (e)->  
+        # @clear()
+        switch Environment.fill_type
+          when "line-build"
+            heat_layer.activate()
+            this.p = new paper.Path
+              name: if this.eraser_on() then "le" else "lb"   
+              segments: [e.point]
+              fillColor: if this.eraser_on() then {hue: 0, saturation: 0.9, brightness: 0.9} else "#00A8E1"
+          when "polygon-build"
+            heat_layer.activate()
+            this.p = new paper.Path   
+              segments: [e.point]
+              closed: true
+            this.p.set HeatSpaceUI.unassigned()
+        e.stopPropagation()
+      onMouseDrag: (e)->
+        switch Environment.fill_type
+          when "polygon-build"
+            this.p.addSegment e.point
+          when "line-build"
+            step = e.delta
+            step.angle = step.angle + 90
+            step.length = Environment.lineBuildWidth
+            top = e.middlePoint.add(step)
+            bottom = e.middlePoint.subtract(step)
+            this.p.add(top)
+            this.p.insert(0, bottom)
+            this.p.smooth()
+        e.stopPropagation()
+      onMouseUp: (e)->
+        this.p.addSegment e.point 
+        
+        switch Environment.fill_type
+          when "polygon-build"
+            this.p.smooth()
+            this.p.simplify()
+            this.deactivate()
+
+
+            cp = this.p.clone()
+            union = this.p.unite(cp)
+            union.set HeatSpaceUI.unassigned()
+            this.p.remove()
+            cp.remove()
+            this.p = union
+            
+            # AREA CHECK
+            area = Math.abs(this.p.area)
+            area = Ruler.pts2mm(area)
+            area = Ruler.pts2mm(area)
+            if area < this.minArea
+              this.p.remove()
+              alertify.error("That heat area was a bit too small for us to handle.")
+            else
+              h = new HeatSpaceUI
+                boundary: this.p
+              tracker.save(false)
+
+          when "line-build"
+            this.p.closed = true
+            this.p.smooth()
+            lb = paper.project.getItems {name: "lb"}
+            le = paper.project.getItems {name: "le"}
+            console.log lb.length
+            if lb.length > 0
+              sum = lb[0]
+              sum.set HeatSpaceUI.unassigned()
+              if lb.length == 1
+                lb.push(lb[0].clone())
+
+              _.each lb, (l, i)->
+                if i == 0 then return
+                union = sum.unite(l)
+                if union
+                  union.set HeatSpaceUI.unassigned()
+                  sum.remove()
+                  sum = union
+                  l.remove()
+                else
+                  sum = l
+
+              _.each le, (l, i)->
+                result = sum.subtract(l)
+                if result
+                  result.set HeatSpaceUI.unassigned()
+                  sum.remove()
+                  sum = result
+                l.remove()
+              this.blob = sum
+        e.stopPropagation()
+
+      update: ()->
+        console.log 
+        switch Environment.fill_type
+          when "polygon-build"
+            results = paper.project.getItems {name: "line-width-choices"}
+            _.each results, (r)-> r.remove()
+          when "line-build"
+            ui_layer.activate()
+            choices = new paper.Group
+              name: "line-width-choices"
+            radii = _.range(4, 40, 4)
+            _.each radii, (r)->
+              c = new paper.Path.Circle
+                name: "choice"
+                parent: choices
+                radius: r
+                strokeColor: "#00A8E1"
+                strokeWidth: if r == 12 then 4 else 0
+                data: 
+                  radius: r
+                fillColor: "black"
+                onMouseDown: (e)->
+                  Environment.lineBuildWidth = this.data.radius
+                  results = paper.project.getItems {name: "choice"}
+                  _.each results, (r)-> r.strokeWidth = 0
+                  this.strokeWidth = 4
+                onMouseDrag: (e)->
+                onMouseUp: (e)->
+              c.position = choices.bounds.bottomCenter.add(new paper.Point(0, 5 + r))
+            choices.position = paper.view.bounds.leftCenter.add(new paper.Point(100, 0))
+      deactivate: (e)->
+        switch Environment.fill_type
+          when "line-build"
+            if this.blob and this.blob.className == "CompoundPath"
+              heat_layer.activate()
+              max = _.max this.blob.children, (child)-> Math.abs(child.area)
+              final = max.clone({insert: false})
+              this.blob.remove()
+              heat_layer.addChild final
+              final.set HeatSpaceUI.unassigned()
+            else
+              final = this.blob
+              
+            if final 
+              if Math.abs(final.area) < 200
+                final.remove()
+                @clear()
+                alertify.error "Having trouble with heat areas that small..."
+                return
+              h = new HeatSpaceUI
+                boundary: final
+              tracker.save(false)
+
+        paper.tool = null
+        @dom.removeClass('red')
+        $('.heat-options').hide()
+        results = paper.project.getItems {name: "line-width-choices"}
+        _.each results, (r)-> r.remove()
+        global_tool.activate()
+
+    
+    window.pan_tool = new paper.Tool
+      dom: $('.pan')
+      name: "pan_tool"
+      deactivate: (e)->
+        paper.tool = null
+        @dom.removeClass('red')
+        global_tool.activate()
+      onMouseDown: (e)->
+        paper.project.deselectAll()
+        e.stopPropagation()
+      onMouseDrag: (e)->
+        _.each paper.project.layers, (l)->
+          if l.name != "ui"
+            l.position = l.position.add(e.delta)
+        e.stopPropagation()
+      onMouseUp: (e)->
+        e.stopPropagation()
+
+    window.cut_tool = new paper.Tool
+      dom: $('.cut')
+      name: "cut_tool"
+      activate2: ()->
+        Environment.cutting = true
+      deactivate: (e)->
+        Environment.cutting = false
+        this.deselectAll()
+        paper.tool = null
+        @dom.removeClass('red')
+        global_tool.activate()
+     
+      hitTest: (e)->
+        hittable = paper.project.getItems
+          data:
+            component: true    
+        hits = _.filter hittable, (hit)->
+          return hit.contains(e.point)
+
+      highlightHits: (e)->
+        this.deselectAll()
+        hits = this.hitTest(e)
+        _.each hits, (hit)->
+          hit.self.selected(true)
+      
+      deselectAll: (e)->
+        hittable = paper.project.getItems
+          data:
+            component: true 
+        _.each hittable, (hit)->
+          hit.self.selected(false)
+        # paper.project.deselectAll()
+      onMouseDown: (e)->
+        @highlightHits(e)
+        e.stopPropagation()
+
+      onMouseDrag: (e)->
+        @highlightHits(e)
+        e.stopPropagation()
+
+      onMouseMove: (e)->
+        @highlightHits(e)
+        e.stopPropagation()
+
+      onMouseUp: (e)-> 
+        paper.project.deselectAll()
+        hits = this.hitTest(e)
+        _.each hits, (hit)->
+          hit.self.cut()
+        this.deactivate()
+        e.stopPropagation()
+
+    window.eraser_tool = new paper.Tool
+      dom: $('.eraser')
+      name: "eraser_tool"
+      deactivate: (e)->
+        this.deselectAll()
+        paper.tool = null
+        @dom.removeClass('red')
+        global_tool.activate()
+     
+      hitTest: (e)->
+        hittable = paper.project.getItems
+          data:
+            component: true    
+        hits = _.filter hittable, (hit)->
+          return hit.contains(e.point)
+
+      highlightHits: (e)->
+        this.deselectAll()
+        hits = this.hitTest(e)
+        _.each hits, (hit)->
+          hit.self.selected(true)
+      deselectAll: (e)->
+        hittable = paper.project.getItems
+          data:
+            component: true 
+        _.each hittable, (hit)->
+          hit.self.selected(false)
+      onMouseDown: (e)->
+        @highlightHits(e)
+
+      onMouseDrag: (e)->
+        @highlightHits(e)
+
+      onMouseMove: (e)->
+        @highlightHits(e)
+
+      onMouseUp: (e)-> 
+        paper.project.deselectAll()
+        hits = this.hitTest(e)
+        _.each hits, (hit)->
+          hit.self.destroyAll()
+        this.deactivate()
+
+    window.global_tool = new paper.Tool
+      name: "global_tool"
+    global_tool.bindHotKeys()
+      
+   
+    _.each $(".tools button"), (t)->
+      tool = $(t).attr('name')
+      tool = eval(tool)
+      tool.deactivate()
+      tool.bindHotKeys()
+
+/ %button.button.ui.massive.circular.icon.blue#sidebar-trigger
+/   %i.icon.sidebar
+
+.ui.sidebar.inverted.vertical#options
+  .ui.segment.inverted
+    .ui.header.dividing.invertedF
+      Tools
+    .tools
+      %button.button.ui.massive.circular.icon.red#heat{name: "heat_tool"}
+        %i.icon.fire
+      %button.button.ui.massive.circular.icon.red#eraser{name: "eraser_tool"}
+        %i.icon.eraser
+      / %button.button.ui.massive.circular.icon.red#translate{name: "translate_tool"}
+      / %i.icon.fas.fa-arrows-alt
+    .ui.header.dividing.inverted
+      Library
+    #components.ui.labeled.icon.buttons.large.vertical.fluid
+      %button.ui.button#powerpad.red{name: "PowerPadMagnet", layer: "circuit_layer"}
+        %i.add.circle.icon
+        PowerPad
+      %button.ui.button#groundpad.blue{name: "GroundPadMagnet", layer: "circuit_layer"}
+        %i.add.circle.icon
+        GroundPad
+      %button.ui.button#line-magnet.yellow{name: "LineMagnet", layer: "circuit_layer"}
+        %i.add.circle.icon
+        Rail
+    
+    .ui.header.dividing.inverted
+      Parameters
+    #dat-gui
+    %br
+    %br
+    .ui.header.dividing.inverted
+      Last Captured Scene
+
+    #captured-scene
+      .ui.image.captioned
+        %img#saved-artwork{width: "100%"}
+        .ui.bottom.attached.label#dimensions
+      %a.button.ui.button.red.icon.circular#artwork-capture{href: notebook_capture_path}
+        %i.icon.camera
+
+= render partial: "generator"  
+      
+#tutorial.ui.modal.transition
+  %i.close.icon
+  .header
+    How to Use the Design Tool
+
+  .content
+    .description
+      / .ui.embed{"data-id" => "O6Xo21L0ybE", "data-source" => "youtube"}
+  .actions
+    .ui.button.positive Got it!
+
+#artboard-settings.ui.modal.transition.small
+  .header Artboard Settings
+  .content
+    .ui.form
+      .ui.dividing.header Page Information
+
+      .field
+        %label Gutter Size
+      .field
+        .ui.labeled.input
+          %input{:value => "1", :type => "number"}/
+          .ui.basic.label
+            in
+      .inline.fields
+        %label Placement
+        .field
+          .ui.checkbox
+            %input{:name => "placement", :tabindex => "0", :type => "checkbox", :checked => "checked"}
+            %label Top
+        .field
+          .ui.checkbox
+            %input{:name => "placement", :tabindex => "0", :type => "checkbox", :checked => "checked"}
+            %label  Bottom
+        .field
+          .ui.checkbox
+            %input{:name => "placement", :tabindex => "0", :type => "checkbox"}
+            %label Left
+        .field
+          .ui.checkbox
+            %input{:name => "placement", :tabindex => "0", :type => "checkbox"}
+            %label Right
+
+      
+    
+      .two.fields
+        .field
+          %label Width
+          .ui.labeled.input
+            %input{:value => "4", :type => "number", :name => "width"}/
+            .ui.basic.label
+              in
+        .field
+          %label Height
+          .ui.labeled.input
+            %input{:value => "4", :type => "number", :name => "height"}/
+            .ui.basic.label
+              in
+
+  .actions
+    .ui.cancel.button.black Cancel
+    .ui.approve.button.positive.labeled.icon 
+      Approve
+      %i.checkmark.icon
+
+
+
+:scss
+  $eggshell: rgb(245, 244, 240);
+
+
+  /* CANVAS BUTTONS */
+  $margin: 40px;
+  $border: $margin - 10;
+  $step_height: 48px;
+  $button_diam: 47px;
+  
+  #zoom-tools{
+    position: absolute;
+    top: $step_height + 2 * $margin + $button_diam +10;
+    right: $margin;
+  }
+
+
+  #project-meta{
+    position: absolute;
+    top: $step_height + $margin + 10;
+    right: $margin;
+  }
+  #help{
+    margin-left: 15px;
+  }
+
+  #options{
+    width: 277px !important;
+    height: 100% !important;
+    background: #1B1C1D;
+  }
+  #undo{
+    position: absolute;
+    bottom: $margin;
+    right: $margin + $button_diam + 10;
+  }
+  #redo{
+    position: absolute;
+    bottom: $margin;
+    right: $margin;
+  }
+  #artwork-toggle{
+    position: absolute;
+    bottom: $margin + 10 + $button_diam;
+    left: $margin;
+    z-index: 100;
+  }  
+  #magnetize{
+    position: absolute;
+    bottom: $margin;
+    left: $margin;
+    z-index: 100;
+  }  
+  #sidebar-trigger{
+      position: absolute;
+      bottom: $margin + $button_diam + 10;
+      right: $margin;
+      z-index: 100;
+    }
+
+  .button, .buttons{
+    -webkit-box-shadow: 10px 10px 33px -16px rgba(0,0,0,0.75) !important;
+    -moz-box-shadow: 10px 10px 33px -16px rgba(0,0,0,0.75) !important;
+    box-shadow: 10px 10px 33px -16px rgba(0,0,0,0.75) !important;
+  }
+
+  
+  .canvas-container{
+      width: 100%;
+      height: 100%;
+      background: #efefef;
+      border: #AAAAAA solid $border;
+      -webkit-box-shadow: 10px 10px 33px -16px rgba(0,0,0,0.75);
+      -moz-box-shadow: 10px 10px 33px -16px rgba(0,0,0,0.75);
+      box-shadow: 10px 10px 33px -16px rgba(0,0,0,0.75);
+
+      .tools{
+        position: absolute;
+        top: $step_height + $margin + 10;
+        left: $margin;
+      }
+      .heat-options{
+        position: absolute;
+        top: $step_height + $margin + 10 + $button_diam +10;
+        left: $margin + 10;
+        z-index: 10000;
+      }
+      #modes{
+        position: absolute;
+        top: $step_height + $margin + 10;
+        left: $button_diam * 7 + $margin + 30;
+        left: calc(50% - 100px);
+        z-index: 10;
+      }
+      #playbar{
+        position: absolute;
+        bottom: $step_height + $margin;
+        left: calc(50% - 95px);
+        z-index: 10;
+      }
+    }
+
+     
+
+  
+
+
+
+  #captured-scene{
+    position: relative;
+    #captured-scene img{
+      width: 100%;
+    }
+    #artwork-capture{
+      position: absolute;
+      top: 5px;
+      left: 5px;
+    }
+  }
+
+
+  .ziptie-container{
+    background: #333;
+    position: relative;
+    display: flex;
+    flex-flow: column nowrap;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+
+    .canvas-area{
+      display: flex;
+      width: 100%;
+      height: 100%;
+      flex-flow: column nowrap;
+      justify-content: center;
+      align-items: center;
+
+    }
+    #dat-gui{
+      font-size: 2em !important;
+    }
+    #project-name input{
+      height: 60px;
+      font-size: 1.5em;
+    }
+    
+    
+  
+    
+
+    
+    canvas#markup{
+      width: 100%;
+      height: 100%;
+      # background: none;
+      # position: absolute;
+      # top: 100px;
+      # left: 100px;
+      # z-index: 100;
+    }
+    
+  }
+  .buffer{
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 100;
+    border: 1px solid red;
+  }
+
+  .partial-container{
+    # width: 100%;
+    height: 100%;
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+    # background: orange;
+    # overflow: hidden;
+  }
+  #trc-select{
+    position: absolute;
+    top: 160px;
+    left: 40px;
+    z-index: 100;
+  }
+  

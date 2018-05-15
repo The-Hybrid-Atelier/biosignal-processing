@@ -1,0 +1,67 @@
+.ui.bottom.attached.tab.segment.active{"data-tab" => "intro"}
+	%h1.ui.header Introduction to Thermopainting
+	.ui.one.column.grid
+		.column
+			%p.large.text
+				%em Thermopainting 
+				is a new media for creating compositions that change over time. This is made possible through the use of a new type of thermo-chromic paint that changes color when heat is applied. The color change typically goes from colored to clear at 
+				%span.farenheit
+					92&deg;F
+				%span.celsius
+					33&deg;C
+				, which means that our body heat
+				%span.farenheit (98.6&deg;F)
+				%span.celsius (37&deg;C)
+				can trigger the change. 
+				.ui.four.column.grid
+					.column
+						.ui.fluid.image
+							.ui.red.ribbon.label 
+								%i.icon.fire
+								Heated
+							= image_tag "/guide/examples/developed/snowman-hot.jpg", class: "watercolor"
+					.column
+						.ui.fluid.image
+							.ui.blue.right.ribbon.label 
+								%i.icon.snowflake
+								Cool
+							= image_tag "/guide/examples/developed/snowman-cool.jpg", class: "watercolor"
+					.column
+					.column
+			%h2.ui.header About the Paint
+			%p.large.text
+				%em The paint behaves very much like watercolors. 
+				It is composed of a watercolor binder and thermochromic pigment. To fill one paint well in a watercolor palette, mix: 
+				.ui.middle.aligned.divided.list.text.large
+					.item 1 gram of thermochromic pigment
+					.item 1.5 mL of watercolor binder
+			%p.large.text
+				The mixture should be thoroughly mixed until the pigment and binder have incorporated. 
+				%b Allow at least 3 hours to dry before using. 
+			.gallery.three
+				.reference
+					= image_tag "/guide/binder.jpg"
+					.caption 
+						Schmincke Watercolor Binder 
+						%br
+						(200 mL @ $22.53 - Dick Blick
+				.reference
+					= image_tag "/guide/thermochromic-pigment.jpg"
+					.caption 
+						Thermochromic Pigments 
+						%br
+						10 colors, 1 gram @ $27.50 - Amazon
+			%h2.ui.header About the Heat
+			%p.large.text
+				The thermochromic paint can be activated from a variety of heat sources including: 
+				.ui.middle.aligned.divided.list.text.large
+					.item Body heat (hand, breath, etc..)
+					.item Ambient temperature (indoors -> outdoors)
+					.item Thermo-electronics (resistive heaters, peltier elements, etc...)
+			%p
+				We have created some new tools for creating thermo-electronics.
+		
+
+
+
+
