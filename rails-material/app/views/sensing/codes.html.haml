@@ -1,2 +1,29 @@
-%h1 Sensing#codes
-%p Find me in app/views/sensing/codes.html.haml
+
+.canvas-area
+	%canvas#markup
+
+:scss
+	$eggshell: #f5f4f0;
+	html, body{
+		width: 100%;
+		height: 100%;
+	}
+	.canvas-area{
+	    display: flex;
+	    width: 100%;
+	    height: 100%;
+	    flex-flow: column nowrap;
+	    justify-content: center;
+	    align-items: center;
+	}
+	canvas#markup{
+	    width: 100%;
+	    height: 100%;
+	    border: 1px solid #999;
+	    background: $eggshell;
+	    # background: none;
+	    # position: absolute;
+	    # top: 100px;
+	    # left: 100px;
+	    # z-index: 100;
+	}
