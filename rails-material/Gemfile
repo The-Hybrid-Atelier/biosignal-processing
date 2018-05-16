@@ -56,8 +56,8 @@ end
 gem 'tzinfo-data', platforms: [:mingw, :mswin, :x64_mingw, :jruby]
 
 #Core
-gem "therubyracer"
-gem "less-rails" #Sprockets (what Rails 3.1 uses for its asset pipeline) supports LESS
+# gem "therubyracer"
+# gem "less-rails" #Sprockets (what Rails 3.1 uses for its asset pipeline) supports LESS
 
 #User authentication
 gem 'omniauth'
@@ -82,7 +82,6 @@ gem 'cloudinary'
 gem 'semantic-ui-sass'
 gem 'streamio-ffmpeg'
 gem 'angularjs-rails'
-gem "browserify-rails"
 gem "font-awesome-rails"
 
 gem 'momentjs-rails'
