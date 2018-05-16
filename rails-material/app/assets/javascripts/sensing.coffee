@@ -39,7 +39,7 @@ $ ->
 	installPaper()
 	vizPipeline.acquireAndProcessData(vizPipeline.renderData)
 window.color_scheme = ["red","orange","yellow","olive","green","teal","blue","violet","purple","pink","brown","grey","black"]
-window.data_source = "/data/data.csv"
+window.data_source = "/data/compiled.json"
 
 
 window.installPaper = (dimensions)->
@@ -135,10 +135,11 @@ vizPipeline =
 				to: timeplot.bounds.rightCenter
 				strokeColor: "#00A8E1"
 				start: 0
-				end: 6 * 60 * 1000
+				end: 6 * 60
 			
 
 			_.each activity, (event)->
+				# console.log event
 				event_orig = _.clone event
 				if event.start > timeline.end then return
 				if event.end < timeline.start then return
@@ -167,40 +168,28 @@ vizPipeline =
 			tracks.pushItem track
 		
 	acquireAndProcessData: (callbackFn)->
-		json = Papa.parse data_source,
-			download: true 
-			header: true
-			before: (file)->
-				console.log "Reading", file
-			error: (err, file)->
-				alertify.error err.message, err.type, err.code, err.row
-			complete: (results, file)->
-				# EXTRACT AUTHORS
-				actors = _.unique(_.map results.data, (r)-> r.Code.split("\\")[1])
-				actors = _.object _.map actors, (a, i)-> 
-					[a, color_scheme[i]]
-				# GROUP ACTIVITIES, CALCULATE DURATION, NORMALIZE TIMES
-				results = _.groupBy results.data, (r)-> r["Document name"]
-				results = _.mapObject results, (codes, k)->
+		rtn = $.getJSON data_source, (manifest)-> 
+			codes = _.mapObject manifest, (data, user)->
+				if data.video and data.video.codes
+					codes = $.ajax({dataType: "json", url: data.video.codes, async: false}).responseJSON
 					codes = _.map codes, (code)->
-						start = moment(code.Begin, "HH:mm:ss.SSS", false)
-						end = moment(code.End, "HH:mm:ss.SSS", false)
-						code = code.Code.split("\\").slice(1)
-						rtn = 
-							actor: code[0] 
-							sub_codes: code.slice(1)
-							color: actors[code[0]] 
-							start: start.valueOf()
-							end: end.valueOf()
-							duration: end.valueOf() - start.valueOf()
-					min_time = _.min codes, (code)-> return code.start
-					min_time = min_time.start
-					codes = _.map codes, (code)->
-						code.start = code.start - min_time
-						code.end = code.end - min_time
-						code
-				# RETURN DATA THROUGH CALLBACK
-				callbackFn
-					activity: results
-					actors: actors	
+						_.extend code, 
+							actor: code.codes[1]
+							codes: code.codes.slice(2)
+				else 
+					return []
+			# EXTRACT AUTHORS
+			actors = _.flatten _.values codes
+			actors = _.unique _.pluck actors, "actor"
+			actors = _.object _.map actors, (a, i)-> 
+				[a, color_scheme[i]]
+
+			# ATTACH COLOR
+			codes = _.mapObject codes, (data, user)->
+				return _.map data, (d)->
+					return _.extend d, 
+						color: actors[d.actor]
+			callbackFn
+				activity: codes
+				actors: actors
 
