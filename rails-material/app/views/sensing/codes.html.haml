@@ -1,29 +1,46 @@
 
+    
 .canvas-area
-	%canvas#markup
+  #video-container
+    .ui.image.centered
+      .ui.black.ribbon.label
+        Inspect
+      %video.centered{:controls => "", :width => "620"}
+        Sorry, your browser doesn't support embedded videos.
+  %canvas#markup
 
 :scss
-	$eggshell: #f5f4f0;
-	html, body{
-		width: 100%;
-		height: 100%;
-	}
-	.canvas-area{
-	    display: flex;
-	    width: 100%;
-	    height: 100%;
-	    flex-flow: column nowrap;
-	    justify-content: center;
-	    align-items: center;
-	}
-	canvas#markup{
-	    width: 100%;
-	    height: 100%;
-	    border: 1px solid #999;
-	    background: $eggshell;
-	    # background: none;
-	    # position: absolute;
-	    # top: 100px;
-	    # left: 100px;
-	    # z-index: 100;
-	}
+  $eggshell: #f5f4f0;
+  html, body{
+      width: 100%;
+      height: 100%;
+  }
+  .canvas-area{
+      display: flex;
+      width: 100%;
+      height: 100%;
+      flex-flow: column nowrap;
+      justify-content: center;
+      align-items: center;
+      padding: 10px;
+      background: $eggshell;
+  }
+  #video-container{
+    padding: 30px;
+  }
+  video{
+      min-height: 350px;
+  }
+  canvas#markup{
+      width: 100%;
+      height: 100%;
+      
+      # background: none;
+      # position: absolute;
+      # top: 100px;
+      # left: 100px;
+      # z-index: 100;
+  }
+  .hidden{
+      display:none !important;
+  }
