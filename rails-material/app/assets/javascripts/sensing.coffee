@@ -10,22 +10,16 @@
 window.manifest = null
 window.color_scheme = ["red","orange","blue","green","yellow","violet","purple","teal", "pink","brown","grey","black"]
 window.data_source = "/data/compiled.json"
+
 $ ->
-	installPaper()
+	window.installPaper()
 	vizPipeline.acquireAndProcessData(vizPipeline.renderData)
 
-
-
-window.installPaper = (dimensions)->
-	# PAPER SETUP
-	markup = $('canvas#markup')[0]
-	paper.install window
-	vizpaper = new paper.PaperScope()
-	vizpaper.setup(markup)
-	vizpaper.settings.handleSize = 10
-	loadCustomLibraries()
-	return vizpaper
-
+window.exportSVG = ()->
+	exp = paper.project.exportSVG
+    asString: true
+    precision: 5
+  saveAs(new Blob([exp], {type:"application/svg+xml"}), participant_id+"_heater" + ".svg");
 vizPipeline = 
 	renderData: (data)->
 		viz_settings = 
@@ -37,41 +31,12 @@ vizPipeline =
 				0: "red"
 				1: "green"
 				2: "blue"
-		renderCodes = (activity, plot)->
-			timeline = plot.children.timeline		
-			_.each activity.video.codes, (event)->
-				event_orig = _.clone event
-				if event.start > timeline.end then return
-				if event.end < timeline.start then return
-				if event.start < timeline.start then event.start = timeline.start
-				if event.end > timeline.end then event.end = timeline.end
-				
-				pos = event.start - timeline.start
-				pos_p = pos / (timeline.end - timeline.start)
-				duration = event.end - event.start
-				duration_p = duration / (timeline.end - timeline.start)
-				max = (timeline.end - event.start) / (timeline.end - timeline.start)
-				
-				width = duration_p * timeline.length
-				position = timeline.getPointAt(pos_p * timeline.length)
-				
-				e = new paper.Path.Rectangle
-					parent: plot
-					name: "event"
-					size: [width, viz_settings.plot.height]
-					fillColor: event.color
-					data: event_orig
-					onMouseDown: (e)->
-						if $('video').attr('src') != activity.video.mp4 then $('video').attr('src', activity.video.mp4)
-						video = $('video')[0]
-						video.currentTime = event_orig.start
-						video.play()
-						codes = _.flatten [event.actor, event.codes]
-						$("#video-container .label").removeClass()
-							.addClass(event.color).addClass('ui label ribbon')
-							.html(codes.join('<span><i class="ui angle right icon"></i></span>'))
-				e.pivot = e.bounds.leftCenter
-				e.position = position
+			render_iron_imu: false
+			render_codes: true
+
+		
+			
+			
 		renderLine = (data, plot)->
 			timeline = plot.children.timeline
 			timeplot = plot.children.timeplot
@@ -144,38 +109,29 @@ vizPipeline =
 						this.update()
 				g.pushItem label
 		makePlot = ()->
-			plot = new paper.Group
-				name: "plot"
-
-			timeplot = new paper.Path.Rectangle
-				name: "timeplot"
-				parent: plot
-				size: [viz_settings.plot.width, viz_settings.plot.height]
-				fillColor: "white"
-				strokeColor: new paper.Color(0.9)
-				strokeWidth: 1
-				# shadowColor: new paper.Color(0.1)
-				# shadowBlur: 5
-			
-			timeline = new paper.Path.Line
-				name: "timeline"
-				parent: plot
-				from: timeplot.bounds.leftCenter
-				to: timeplot.bounds.rightCenter
-				strokeColor: "#00A8E1"
-				start: 0
-				end: 6 * 60
-				
+			plot = new TimePlot
+				width: viz_settings.plot.width
+				height: viz_settings.plot.height
+			plot.init()	
 			return plot
 		makeTracks = ()->
 			# TRACK CREATION
 			tracks = new AlignmentGroup
 				name: "tracks"
-				window: true
-				moveable: true
 				padding: 10
 				orientation: "vertical"
-				anchor: paper.view.center
+				window: false
+			
+
+			track_window = new ScrollWindow
+				name: "data_pane"
+				max_height: 300
+				orientation: 'horizontal'
+				padding: 5
+				moveable: true
+				anchor: paper.project.getItem({name: "legend"}).bounds.bottomCenter.add(new paper.Point(0, 150+15))
+
+			track_window.pushItem(tracks)
 
 			_.each data.activity, (activity, user)->
 				track = new AlignmentGroup
@@ -195,22 +151,16 @@ vizPipeline =
 					orientation: "vertical"
 					backgroundColor: "#F0F0F0"
 
-				code_plot = makePlot()
-				renderCodes(activity, code_plot)
-
-				acc_plot = makePlot()
-				renderLine(activity.iron.imu.A, acc_plot)
-
-				mag_plot = makePlot()
-				renderLine(activity.iron.imu.M, mag_plot)
-
-				gyro_plot = makePlot()
-				renderLine(activity.iron.imu.G, gyro_plot)
-
-				plot_container.pushItem(code_plot)
-				plot_container.pushItem(acc_plot)
-				plot_container.pushItem(mag_plot)
-				plot_container.pushItem(gyro_plot)
+				if viz_settings.render_codes
+					code_plot = makePlot()
+					_.each activity.video.codes, (event)-> code_plot.plotEvent(event, activity.video.mp4)
+					plot_container.pushItem(code_plot)
+				
+				if viz_settings.render_iron_imu
+					_.each activity.iron.imu, (sensor_data)->
+						p = makePlot()
+						renderLine(sensor_data, p)
+						plot_container.pushItem p
 
 				track.pushItem label
 				track.pushItem plot_container
