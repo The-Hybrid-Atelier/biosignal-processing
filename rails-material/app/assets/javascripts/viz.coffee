@@ -188,8 +188,27 @@ class window.TimePlot extends AlignmentGroup
 			strokeColor: "#00A8E1"
 			start: 0
 			end: 6 * 60
+		if this.title 
+			@addTitle()
+	addTitle: ()->
+			ops = 
+				name: "title"
+				parent: this
+				content: ""
+				fillColor: 'black'
+				fontFamily: 'Avenir'
+				fontSize: 10	
+				justification: 'center'
+			ops = _.extend ops, this.title
+			t = new paper.PointText ops
+				
+			t.rotate(90+180)
+			t.position = this.children.timeplot.bounds.leftCenter.clone().add(new paper.Point(-t.bounds.width/2, 0))
+	
 	pushItem: (obj)-> 
 		super(obj)
+	plotLine: (data_x, data_y)->
+
 	plotEvent: (event, videoURL)->
 		timeline = this.children.timeline
 		event_orig = _.clone event

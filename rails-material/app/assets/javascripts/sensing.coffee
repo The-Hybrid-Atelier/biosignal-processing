@@ -31,12 +31,9 @@ vizPipeline =
 				0: "red"
 				1: "green"
 				2: "blue"
-			render_iron_imu: false
-			render_codes: true
+			render_iron_imu: true
+			render_codes: false
 
-		
-			
-			
 		renderLine = (data, plot)->
 			timeline = plot.children.timeline
 			timeplot = plot.children.timeplot
@@ -108,10 +105,13 @@ vizPipeline =
 						this.data.activate = not this.data.activate
 						this.update()
 				g.pushItem label
-		makePlot = ()->
+		makePlot = (title)->
 			plot = new TimePlot
 				width: viz_settings.plot.width
 				height: viz_settings.plot.height
+				title: 
+					content: title
+				orientation: "horizontal"
 			plot.init()	
 			return plot
 		makeTracks = ()->
@@ -152,13 +152,13 @@ vizPipeline =
 					backgroundColor: "#F0F0F0"
 
 				if viz_settings.render_codes
-					code_plot = makePlot()
+					code_plot = makePlot('codes')
 					_.each activity.video.codes, (event)-> code_plot.plotEvent(event, activity.video.mp4)
 					plot_container.pushItem(code_plot)
 				
 				if viz_settings.render_iron_imu
-					_.each activity.iron.imu, (sensor_data)->
-						p = makePlot()
+					_.each activity.iron.imu, (sensor_data, k)->
+						p = makePlot(k)
 						renderLine(sensor_data, p)
 						plot_container.pushItem p
 
