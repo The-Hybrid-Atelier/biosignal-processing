@@ -32,36 +32,15 @@ vizPipeline =
 				1: "green"
 				2: "blue"
 			render_iron_imu: true
-			render_codes: false
+			render_codes: true
 
 		renderLine = (data, plot)->
-			timeline = plot.children.timeline
-			timeplot = plot.children.timeplot
-			plot_height = timeplot.bounds.height
-			plot_width = timeplot.bounds.width
-			lines = _.map data.data.slice(0), (channel, k)->
+			lines = _.map data.data, (channel, k)->
 				pts = _.map channel, (mag, i)->
 					t = data.time[i]
-					if t > timeline.end then return null
-					if t < timeline.start then return null
 					return [data.time[i], mag]
-				pts = _.compact pts
-				line = new paper.Path.Line
-					parent: plot
-					strokeColor: viz_settings.colors[k]
-					strokeWidth: 1
-					segments: pts
-				return line
-
-			lw_max = (_.max lines, (line)-> return line.bounds.width).bounds.width			
-			lh_max = (_.max lines, (line)-> return line.bounds.height).bounds.height
-
-			_.each lines, (line)-> line.scaling.x = (plot_width)/lw_max
-			_.each lines, (line)-> line.scaling.y = (plot_height - 10)/lh_max
-			
-			_.each lines, (line)-> 
-				line.pivot = line.bounds.leftCenter
-				line.position = timeplot.bounds.leftCenter
+				plot.plotLine(pts, viz_settings.colors[k])
+			plot.fitAxes()
 		makeLegend = ()->		
 			# LEGEND CREATION
 			g = new AlignmentGroup

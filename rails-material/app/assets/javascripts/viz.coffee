@@ -78,6 +78,7 @@ class window.ScrollWindow extends AlignmentGroup
 
 		diff = this.children.background.bounds.height - this.max_height + 15					
 		island_height = scroll_bar.bounds.height * (1 - (diff/400))
+		island_height = _.max([30, island_height])
 		island = new paper.Path.Rectangle
 			parent: this
 			name: "island"
@@ -169,48 +170,94 @@ class window.LabelGroup extends AlignmentGroup
 			this.on('mouseleave', (e)-> this.children.hover.fillColor = new paper.Color(0.9, 0))
 			this.hoverable = true
 
-class window.TimePlot extends AlignmentGroup
+class window.TimePlot extends paper.Group
+	get: (name)->
+		return this.getItem({name: name})
 	init: ()->
 		this.set 
 			name: "plot"
+		wrapper = new paper.Group
+			parent: this
+			name: "wrapper"	
+		plot_wrapper = new paper.Group
+			name: "plot_wrapper"
+			parent: wrapper
+			onMouseDrag: (e)->
+				this.translate new paper.Point(e.delta.x, 0)
+				e.stopPropagation(e)
 		timeplot = new paper.Path.Rectangle
 			name: "timeplot"
-			parent: this
-			size: [this.width, this.height]
+			parent: plot_wrapper
+			size: [this.width * 2, this.height]
 			fillColor: "white"
 			strokeColor: new paper.Color(0.9)
 			strokeWidth: 1
 		timeline = new paper.Path.Line
 			name: "timeline"
-			parent: this
+			parent: plot_wrapper
 			from: timeplot.bounds.leftCenter
 			to: timeplot.bounds.rightCenter
 			strokeColor: "#00A8E1"
 			start: 0
 			end: 6 * 60
+		clip = new paper.Path.Rectangle
+			name: "clip"
+			parent: wrapper
+			size: [this.width, this.height]
+			fillColor: "blue"
+			clipMask: true
+
 		if this.title 
 			@addTitle()
 	addTitle: ()->
-			ops = 
-				name: "title"
-				parent: this
-				content: ""
-				fillColor: 'black'
-				fontFamily: 'Avenir'
-				fontSize: 10	
-				justification: 'center'
-			ops = _.extend ops, this.title
-			t = new paper.PointText ops
-				
-			t.rotate(90+180)
-			t.position = this.children.timeplot.bounds.leftCenter.clone().add(new paper.Point(-t.bounds.width/2, 0))
-	
-	pushItem: (obj)-> 
-		super(obj)
-	plotLine: (data_x, data_y)->
+		ops = 
+			name: "title"
+			parent: this
+			content: ""
+			fillColor: 'black'
+			fontFamily: 'Avenir'
+			fontSize: 10	
+			justification: 'center'
+		ops = _.extend ops, this.title
+		t = new paper.PointText ops
+			
+		t.rotate(90+180)
+		t.position = this.get('clip').bounds.leftCenter.clone().add(new paper.Point(-t.bounds.width/2, 0))
+	plotLine: (data, color)->
+		plot_wrapper = this.get("plot_wrapper")
+		timeline = this.get("timeline")
+		
+		pts = _.filter data, (pt)-> return pt[0] >= timeline.start and pt[0] <= timeline.end
+		line = new paper.Path.Line
+			parent: plot_wrapper
+			strokeColor: color
+			strokeWidth: 1
+			segments: pts
+			data: 
+				line: true
+				pts: data
+
+	fitAxes: ()->		
+		plot_wrapper = this.get("plot_wrapper")
+		timeplot = this.get("timeplot")
+		plot_height = timeplot.bounds.height
+		plot_width = timeplot.bounds.width
+		lines = this.getItems {data: {line: true}}
+
+		lw_max = (_.max lines, (line)-> return line.bounds.width).bounds.width			
+		lh_max = (_.max lines, (line)-> return line.bounds.height).bounds.height
+
+		_.each lines, (line)-> line.scaling.x = (plot_width)/lw_max
+		_.each lines, (line)-> line.scaling.y = (plot_height - 10)/lh_max
+		
+		_.each lines, (line)-> 
+			line.pivot = line.bounds.leftCenter
+			line.position = timeplot.bounds.leftCenter
 
 	plotEvent: (event, videoURL)->
-		timeline = this.children.timeline
+		plot_wrapper = this.get("plot_wrapper")
+		timeline = this.get("timeline")
+		
 		event_orig = _.clone event
 		if event.start > timeline.end then return
 		if event.end < timeline.start then return
@@ -227,7 +274,7 @@ class window.TimePlot extends AlignmentGroup
 		position = timeline.getPointAt(pos_p * timeline.length)
 		
 		e = new paper.Path.Rectangle
-			parent: this
+			parent: plot_wrapper
 			name: "event"
 			size: [width, this.height]
 			fillColor: event.color
