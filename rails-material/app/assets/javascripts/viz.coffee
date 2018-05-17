@@ -31,6 +31,17 @@ class window.AlignmentGroup extends paper.Group
 				shadowBlur: 5
 				radius: 5
 			bg.sendToBack()
+		if this.backgroundColor
+			if this.children.background
+				this.children.background.remove()
+			bg = new paper.Path.Rectangle
+				parent: this
+				name: "background"
+				rectangle: this.bounds.expand(25)
+				fillColor: this.backgroundColor
+				radius: 5
+			bg.sendToBack()
+
 
 class window.LabelGroup extends AlignmentGroup
 	constructor: (op)->
