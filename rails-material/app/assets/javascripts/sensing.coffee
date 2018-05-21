@@ -14,6 +14,11 @@ window.data_source = "/data/compiled.json"
 $ ->
 	window.installPaper()
 	vizPipeline.acquireAndProcessData(vizPipeline.renderData)
+	window.addEventListener "wheel", (e)->
+		island = paper.project.getItem {name: "island"} 
+		island.emit 'mousedrag', 
+			point: island.position.clone().add(new paper.Point(0, e.deltaY * 0.5))
+			stopPropagation: ()-> return
 
 window.exportSVG = ()->
 	exp = paper.project.exportSVG
@@ -31,7 +36,7 @@ vizPipeline =
 				0: "red"
 				1: "green"
 				2: "blue"
-			render_iron_imu: true
+			render_iron_imu: false
 			render_codes: true
 
 		renderLine = (data, plot)->
@@ -45,12 +50,14 @@ vizPipeline =
 			# LEGEND CREATION
 			g = new AlignmentGroup
 				name: "legend"
-				title: true
-				window: true
-				moveable: true
 				orientation: "horizontal"
 				padding: 20
-				anchor: paper.view.bounds.topCenter.add(new paper.Point(0, viz_settings.padding))
+				window: 
+					background: true
+					moveable: true
+					shading: true
+				anchor: 
+					position: paper.view.bounds.topCenter.add(new paper.Point(0, viz_settings.padding))
 
 			_.each data.actors, (color, actor)->
 				color_code = new paper.Color color
@@ -84,66 +91,102 @@ vizPipeline =
 						this.data.activate = not this.data.activate
 						this.update()
 				g.pushItem label
-		makePlot = (title)->
+		makePlot = (title, video)->
 			plot = new TimePlot
 				width: viz_settings.plot.width
 				height: viz_settings.plot.height
 				title: 
 					content: title
+				video: video
 				orientation: "horizontal"
 			plot.init()	
 			return plot
 		makeTracks = ()->
-			# TRACK CREATION
-			tracks = new AlignmentGroup
-				name: "tracks"
-				padding: 10
-				orientation: "vertical"
-				window: false
-			
-
-			track_window = new ScrollWindow
-				name: "data_pane"
-				max_height: 300
-				orientation: 'horizontal'
-				padding: 5
+			panel = new WindowGroup
+				name: "panel"
+				shading: true
 				moveable: true
-				anchor: paper.project.getItem({name: "legend"}).bounds.bottomCenter.add(new paper.Point(0, 150+15))
-
-			track_window.pushItem(tracks)
-
-			_.each data.activity, (activity, user)->
-				track = new AlignmentGroup
-					name: "track"
-					padding: 10
-					orientation: "horizontal"
-
-				label = new LabelGroup
-					orientation: "horizontal"
-					text: user
-					onMouseDown: (e)->
-						$('video').attr('src', activity.video.mp4)
-
-				plot_container = new AlignmentGroup
-					name: "plot_container"
-					padding: 5
+				anchor: 
+					pivot: "topCenter"
+					position: paper.project.getItem({name: "legend"}).bounds.bottomCenter.add(new paper.Point(0, 15))
+				pane: 
+					padding: 15
 					orientation: "vertical"
-					backgroundColor: "#F0F0F0"
+					max_height: 100
+					background:
+						fillColor: new paper.Color(0.9)
+						padding: [30, 15]
+				title: 
+					content: "TIMELINE"
+					buttons: true
+		
+			panel.init()	
+			
+			
+			# # TRACK CREATION			
+			# track_window = new WindowGroup
+			# 	name: "data_pane"
+			# 	shading: true
+			# 	moveable: false
+			# 	title: 
+			# 		content: "DATAPANE"
+			# 		buttons: true
+			# 	pane: 
+			# 		padding: 5
+			# 		orientation: "vertical"
+			# 		background:
+			# 			fillColor: new paper.Color(0.7)
+			# 			padding: [30, 15]
+			# track_window.init()
+			# track_window.pushItem new paper.Path.Circle
+			# 	radius: 100
+			# 	fillColor: "red"	
+			panel.pushItem new paper.Path.Circle
+				radius: 100
+				fillColor: "orange"	
+			# panel.pushItem track_window
 
-				if viz_settings.render_codes
-					code_plot = makePlot('codes')
-					_.each activity.video.codes, (event)-> code_plot.plotEvent(event, activity.video.mp4)
-					plot_container.pushItem(code_plot)
+
+
+			# _.each data.activity, (activity, user)->
+			# 	track = new AlignmentGroup
+			# 		name: "track"
+			# 		padding: 10
+			# 		orientation: "horizontal"
+
+			# 	label = new LabelGroup
+			# 		orientation: "horizontal"
+			# 		text: user
+			# 		onMouseDown: (e)->
+			# 			$('video').attr('src', activity.video.mp4)
+			# 	# label2 = new LabelGroup
+			# 	# 	orientation: "horizontal"
+			# 	# 	text: user + "2"
+			# 	# 	onMouseDown: (e)->
+			# 	# 		$('video').attr('src', activity.video.mp4)
+
+			# 	plot_container = new AlignmentGroup
+			# 		name: "plot_container"
+			# 		padding: 5
+			# 		orientation: "vertical"
+			# 		backgroundColor: "#F0F0F0"
+
+			# 	if viz_settings.render_codes
+			# 		code_plot = makePlot('codes', activity.video.mp4)
+			# 		_.each activity.video.codes, (event)-> code_plot.plotEvent(event, activity.video.mp4)
+			# 		plot_container.pushItem(code_plot)
 				
-				if viz_settings.render_iron_imu
-					_.each activity.iron.imu, (sensor_data, k)->
-						p = makePlot(k)
-						renderLine(sensor_data, p)
-						plot_container.pushItem p
+			# 	# if viz_settings.render_iron_imu
+			# 	# 	_.each activity.iron.imu, (sensor_data, k)->
+			# 	# 		p = makePlot(k, activity.video.mp4)
+			# 	# 		renderLine(sensor_data, p)
+			# 	# 		plot_container.pushItem p
 
-				track.pushItem label
-				track.pushItem plot_container
-				tracks.pushItem track
+			# 	track.pushItem label
+			# 	# track.pushItem label2
+			# 	track.pushItem plot_container
+			# 	track_window.pushItem track
+			
 		
 		makeLegend()
 		makeTracks()
@@ -154,13 +197,13 @@ vizPipeline =
 			# RESOLVE JSON FILES
 			activity = _.mapObject manifest, (data, user)->
 				_.mapObject data, (sensors, object)->
-					_.mapObject sensors, (url, sensor)->
-						filetype = url.split('.').slice(-1)[0] 
+					_.mapObject sensors, (file, sensor)->
+						filetype = file.url.split('.').slice(-1)[0] 
 						switch filetype
 							when "json"
-								return $.ajax({dataType: "json", url: url, async: false}).responseJSON
+								return $.ajax({dataType: "json", url: file.url, async: false}).responseJSON
 							else
-								return url
+								return file.url
 			# PROCESS DATA
 			_.each activity, (data, user)->
 				activity[user].video.codes = _.map data.video.codes, (code)->
