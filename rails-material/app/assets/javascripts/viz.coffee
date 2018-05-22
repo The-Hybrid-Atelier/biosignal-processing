@@ -14,10 +14,16 @@ class window.AlignmentGroup extends paper.Group
 					obj.pivot = obj.bounds.center
 		if this.background
 			if this.children.background then this.children.background.remove()
+			if this.background.padding
+				if not this.background.padding.x
+					this.background.padding = 
+						x: this.background.padding
+						y: this.background.padding
+
 			bg = new paper.Path.Rectangle
 				parent: this
 				name: "background"
-				rectangle: this.bounds.expand(this.background.padding)
+				rectangle: this.bounds.expand(this.background.padding.x, this.background.padding.y)
 				fillColor: "white"
 			bg.set this.background
 			bg.sendToBack()
@@ -46,9 +52,10 @@ class window.WindowGroup extends AlignmentGroup
 	get: (name)-> return @ui[name]
 	pushItem: (obj)->
 		this.get("pane").pushItem(obj)
-		@makeTitle()
+		
 		@reposition()
 		@clipWindow()
+		@makeTitle()
 	configureWindow: ()->
 		if this.moveable
 			this.set
@@ -68,7 +75,8 @@ class window.WindowGroup extends AlignmentGroup
 		
 		if this.pane.max_height and r.height > this.pane.max_height
 			r.height = this.pane.max_height
-			
+		if this.pane.max_width and r.width > this.pane.max_width
+			r.width = this.pane.max_width
 
 		@ui.clip = new paper.Path.Rectangle
 			parent: this.get("clipped")
@@ -101,11 +109,14 @@ class window.WindowGroup extends AlignmentGroup
 		@ui.pane = new AlignmentGroup _.extend this.pane, 
 			parent: this.get("clipped")
 			name: "pane"
+			background: 
+				padding: [15, 30]
+				fillColor: "yellow"
 	makeTitle: ()->
 		scope = this
 		if not this.title then return 
 		
-		bg = @ui.pane
+		bg = @get('clipped')
 		if this.get("title_bar") then this.get("title_bar").remove()
 
 		title = new paper.Group
@@ -123,8 +134,8 @@ class window.WindowGroup extends AlignmentGroup
 			fillColor: new paper.Color(0.8)
 			strokeWidth: 1
 			strokeColor: "#CACACA"
-		
-		title.pivot = title.bounds.bottomCenter
+			
+		title.pivot = title.bounds.topCenter
 		title.position = bg.bounds.topCenter
 		
 		
@@ -246,111 +257,13 @@ class window.WindowGroup extends AlignmentGroup
 				onMouseDrag: (e)->
 					this.position = island_path.getNearestPoint(e.point)
 					param = island_path.getOffsetOf(this.position)/island_path.length
-					scrollTop = param * diff - 15
-					pane.pivot = pane.bounds.topCenter
-					pane.position = clip.bounds.topCenter.add(new paper.Point(0, -scrollTop))
+					scrollTop = param * diff - 55
+					pane.pivot = pane.bounds.leftCenter
+					pane.position = clip.bounds.leftCenter.add(new paper.Point(0, -scrollTop))
 					e.stopPropagation()
 				onMouseUp: (e)->
 					this.fillColor.brightness = this.fillColor.brightness + 0.2
-class window.ScrollWindow extends WindowGroup
-	makeScroll: ()->
-		continue
-	# makeScroll: ()->
-	# 	b = this.bounds.expand(0)
-	# 	b.height = this.max_height
-	# 	clip = new paper.Path.Rectangle
-	# 		parent: this
-	# 		name: "clip"
-	# 		rectangle: b
-	# 		fillColor: "yellow"
-	# 		shadowColor: new paper.Color(0.3)
-	# 		shadowBlur: 5
-	# 		radius: 5
-	# 		clipMask: true
-	# 		data: 
-	# 			scroll: true
 
-	# 	clip.pivot = clip.bounds.topCenter
-	# 	clip.position = this.bounds.topCenter
-	# 	clip.sendToBack()	
-
-	# 	scroll_bar = new paper.Path.Rectangle
-	# 		parent: this
-	# 		name: "scroll_bar"
-	# 		size: [15, clip.bounds.height]
-	# 		fillColor: new paper.Color(0.9)
-	# 		data: 
-	# 			scroll: true
-	# 	scroll_bar.pivot = scroll_bar.bounds.rightCenter	
-	# 	scroll_bar.position = clip.bounds.rightCenter	
-
-	# 	diff = this.children.background.bounds.height - this.max_height + 15					
-	# 	island_height = scroll_bar.bounds.height * (1 - (diff/400))
-	# 	island_height = _.max([30, island_height])
-	# 	island = new paper.Path.Rectangle
-	# 		parent: this
-	# 		name: "island"
-	# 		size: [scroll_bar.bounds.width * 0.8, island_height]
-	# 		fillColor: new paper.Color(0.5)
-	# 		shadowColor: new paper.Color(0.1)
-	# 		shadowBlur: 2
-	# 		data: 
-	# 			scroll: true
-	# 	island.pivot = island.bounds.topCenter	
-	# 	island.position = scroll_bar.bounds.topCenter
-	# 	island.pivot = island.bounds.center
-	# 	scope = this
-	# 	_.delay ()->
-	# 		island_path = new paper.Path.Line
-	# 			parent: scope
-	# 			from: scroll_bar.bounds.topCenter.add(new paper.Point(0, island.bounds.height/2))
-	# 			to: scroll_bar.bounds.bottomCenter.subtract(new paper.Point(0, island.bounds.height/2))
-	# 			data: 
-	# 				scroll: true
-	# 			strokeWidth: 1
-	# 			strokeColor: "black"
-	# 			visible: false
-	# 		island.set
-	# 			onMouseDown: (e)->
-	# 				this.fillColor.brightness = this.fillColor.brightness - 0.2
-	# 			onMouseDrag: (e)->
-	# 				this.position = island_path.getNearestPoint(e.point)
-	# 				param = island_path.getOffsetOf(this.position)/island_path.length
-	# 				scrollTop = param * diff - 15
-	# 				pane = scope.getItem {data: {pane: true}}
-	# 				if pane
-	# 					pane.pivot = pane.bounds.topCenter
-	# 					pane.position = clip.bounds.topCenter.add(new paper.Point(0, -scrollTop))
-	# 				e.stopPropagation()
-	# 			onMouseUp: (e)->
-	# 				this.fillColor.brightness = this.fillColor.brightness + 0.2
-
-	# pushItem: (obj)->
-	# 	_.each this.getItems({data: {scroll: true}}), (item)-> item.remove()
-	# 	obj.data.pane = true
-	# 	super obj
-	# 	scope = this
-		# _.delay (()-> 
-		# 	if scope.children.background
-		# 		this.children.background.remove()
-
-		# 	bg = new paper.Path.Rectangle
-		# 		parent: scope
-		# 		name: "background"
-		# 		rectangle: scope.bounds.expand(30, 15)
-		# 		fillColor: "white"
-		# 		shadowColor: new paper.Color(0.3)
-		# 		shadowBlur: 5
-		# 		radius: 5
-		# 	bg.sendToBack()
-			
-
-		# 	# if scope.max_height < scope.children.background.bounds.height
-		# 	# 	scope.makeScroll()
-			
-		# 	if scope.anchor
-		# 		scope.position = scope.anchor
-		# 	), 0
 				
 class window.LabelGroup extends AlignmentGroup
 	constructor: (op)->
@@ -524,5 +437,20 @@ window.installPaper = (dimensions)->
 	vizpaper.settings.handleSize = 10
 	loadCustomLibraries()
 	return vizpaper
+
+window.makePaper = (parent)->
+	c = $('<canvas></canvas>')
+	parent.html(c)
+	c.attr
+		height: parent.height()
+	console.log parent.height()
+	p = new paper.PaperScope()
+	p.setup(c[0])
+	p.settings.handleSize = 10
+	new paper.Path.Circle
+		radius: 20
+		fillColor: "#00A8E1"
+		position: paper.view.center
+	return p
 
 
