@@ -1,74 +1,11 @@
-.ui.container
-  .ui.segment.session
-    .node
-      .label
-        %span Molly
-      .panel
-        .node
-          .label
-            %span Iron
-          .panel
-            .node
-              .label
-                %span Acc
-              .panel.paper
-                Stuff
-            .node
-              .label
-                %span Gyro
-              .panel.paper
-                Stuff
-            .node
-              .label
-                %span Mag
-              .panel.paper
-                Stuff
-
-    .node
-      .label
-        %span Cesar
-      .panel
-        .node
-          .label
-            %span Iron
-          .panel
-            .node
-              .label
-                %span Acc
-              .panel.paper
-                Stuff
-            .node
-              .label
-                %span Gyro
-              .panel.paper
-                Stuff
-            .node
-              .label
-                %span Mag
-              .panel.paper
-                Stuff
-        .node
-          .label
-            %span Env
-          .panel
-            .node
-              .label
-                %span Audio
-              .panel.paper
-                Stuff
-            .node
-              .label
-                %span Codes
-              .panel.paper
-                Stuff
-/ .canvas-area
-/   #video-container.hidden
-/     .ui.image.centered
-/       .ui.black.ribbon.label
-/         Inspect
-/       %video.centered{:controls => "", :width => "620"}
-/         Sorry, your browser doesn't support embedded videos.
-/   %canvas#markup
+#video-container
+  .ui.image.centered
+    .ui.black.ribbon.label
+      Video
+    %video.centered{:controls => "", :width => "620", src:"/data/video_data/mp4/cesar.mp4"}
+      Sorry, your browser doesn't support embedded videos.
+.canvas-area
+  %canvas#markup
 
 :scss
   $eggshell: #f5f4f0;
@@ -148,6 +85,7 @@
   }
   #video-container{
     padding: 30px;
+    position: absolute;
   }
   video{
       min-height: 350px;
@@ -156,6 +94,10 @@
   canvas#markup{
       width: 100%;
       height: 100%;
+  }
+  canvas#markup[resize]{
+    width: 100%;
+    height: 100%;
   }
   .hidden{
       display:none !important;
