@@ -33,9 +33,14 @@ class window.Timeline
 						opacity: 0.5
 					buffer.pivot = buffer.bounds.rightCenter
 					buffer.position = this.children.timebox.bounds.rightCenter
-
 		timeline.init()
-		
+		@addPlot(timeline)
+		@addTimeLabels(timeline)
+		@addControlUI(timeline)
+		@bindVideoEvents(timeline)
+		this.timeline = timeline
+
+	addPlot: (timeline)->
 		timebox = new paper.Path.Rectangle
 			size: [600, 60]
 			fillColor: "#F5F5F5"
@@ -45,7 +50,9 @@ class window.Timeline
 			name: "timebox"
 			get: (name)-> return this.children[name]
 			getP: (name)-> return this.parent.children[name]
-			clearCue: ()-> if cue = this.getP("cue") then cue.remove()
+			clearUI: ()-> 
+				ui = this.parent.getItems {ui: true}
+				_.each ui, (el)-> el.remove()
 			addCue: (e)->
 				timebar = @getP("timebar")
 				dis = e.point.x - this.down.x
@@ -59,26 +66,54 @@ class window.Timeline
 						opacity: 0.5
 						fillColor: "#00A8E1"
 						radius: 2
+						ui: true
 					cue.pivot = if dir > 0 then cue.bounds.leftCenter else cue.bounds.rightCenter
 					cue.position = timebar.getNearestPoint(this.down)
 					cue.pivot = cue.bounds.leftCenter
-			updateScrubber: (e)->
+			updateScrubber: (pt)->
 				scrubber = @getP("scrubber")
-				scrub.setPos(e.point.x)
+				scrubber.setPos(pt.x)
+				@makeTimeLabel(scrubber)
+			makeTimeLabel: (scrubber)->
+				t = scrubber.getTime()
+				t_label = new Group
+					name: "t_label"
+					parent: this.parent
+					ui: true
+					onMouseDown: (e)-> this.bringToFront()
+				
+				label = new paper.PointText
+					parent: t_label
+					content: window.time(t * 1000)
+					fillColor: new paper.Color(0.6)
+					fontFamily: 'Avenir'
+					fontSize: 12
+					fontWeight: "normal"
+					justification: 'center'
+					
+				bg = new paper.Path.Rectangle
+					parent: t_label
+					rectangle: t_label.bounds.expand(5, 3)
+					fillColor: "white"
+					radius: 2
+					shadowColor: new paper.Color(0.4)
+					shadowBlur: 2
+				bg.sendToBack()
+				t_label.pivot = t_label.bounds.bottomCenter.add(new paper.Point(0, 5))
+				t_label.position = scrubber.bounds.topCenter
 			onMouseDown: (e)->
-				@clearCue()
+				@clearUI()
 				this.p = new paper.Path
 					strokeColor: "#00A8E1"
 					strokeWidth: 1
 					segments: [e.point]
-				t = this.updateScrubber(e)
-				this.video.currentTime = t
+				t = this.updateScrubber(e.point)
 				this.down = e.point
 				e.stopPropagation()
 			onMouseDrag: (e)->
 				this.p.addSegment(e)
-				@clearCue()
-				@updateScrubber(e)
+				@clearUI()
+				@updateScrubber(e.point)
 				if e.modifiers.shift
 					@addCue(e)
 				e.stopPropagation()
@@ -87,6 +122,7 @@ class window.Timeline
 				if cue = @getP("cue")
 					scrub = this.parent.children.scrubber
 					scrub.setPos(cue.position.x+1)
+					@updateScrubber(cue.position)
 				e.stopPropagation()
 
 		timeline.pushItem timebox
@@ -144,19 +180,6 @@ class window.Timeline
 					p = (t - this.parent.range.start) / range
 					np = timebar.getPointAt(p * timebar.length)
 					this.position.x = np.x
-
-		$('video').on 'loadeddata', (e)->
-			timeline.addEnding()
-		$('video').on 'timeupdate', (e)->
-			scrub.gotoTime(this.currentTime)
-			cue = timeline.children.cue
-			if cue and not scrub.intersects(cue)
-				this.pause()
-				scrub.position.x = cue.position.x+1
-				this.currentTime = scrub.getTime()
-		@addTimeLabels(timeline)
-		@addUI(timeline)
-		this.timeline = timeline
 	addTimeLabels: (timeline)->
 		# time label container
 		timebox = timeline.children.timebox
@@ -195,7 +218,7 @@ class window.Timeline
 				justification: 'center'
 			tt.pivot = tt.bounds.center
 			tt.position = textline.getPointAt(p * textline.length)
-	addUI: (timeline)->
+	addControlUI: (timeline)->
 		buttons = new AlignmentGroup
 			parent: timeline
 			name: "buttons"
@@ -238,3 +261,14 @@ class window.Timeline
 				e.stopPropagation()	
 		$('video').on "ratechange", ()->
 			rate.updateLabel this.playbackRate.toFixed(1)
+	bindVideoEvents: (timeline)->
+		$('video').on 'loadeddata', (e)->
+			timeline.addEnding()
+		$('video').on 'timeupdate', (e)->
+			scrub = timeline.children.scrubber
+			scrub.gotoTime(this.currentTime)
+			cue = timeline.children.cue
+			if cue and not scrub.intersects(cue)
+				this.pause()
+				scrub.position.x = cue.position.x+1
+				this.currentTime = scrub.getTime()
