@@ -195,7 +195,6 @@ class window.Timeline
 				justification: 'center'
 			tt.pivot = tt.bounds.center
 			tt.position = textline.getPointAt(p * textline.length)
-
 	addUI: (timeline)->
 		buttons = new AlignmentGroup
 			parent: timeline
