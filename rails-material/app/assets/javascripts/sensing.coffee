@@ -14,6 +14,7 @@
 #= require jquery-ui/widgets/selectable
 #= require jquery-ui/widgets/sortable
 #= require viz
+#= require viz/timeline
 
 
 window.manifest = null
@@ -88,150 +89,10 @@ class VizEnvironment
 		window.installPaper()
 		@makeLegend(data)
 		@makeTracks(data)
-		@makeTimeline(data)
+		this.timeline = new Timeline()
 		@ready()
 
-	makeTimeline: (data)->
-		timeline = new AlignmentGroup
-			name: "timeline"
-			title: 
-				content: "TIMELINE"
-			moveable: true
-			padding: 5
-			orientation: "vertical"
-			background: 
-				fillColor: "white"
-				padding: 5
-				radius: 5
-				shadowBlur: 5
-				shadowColor: new paper.Color(0.9)
-			anchor: 
-				pivot: "center"
-				position: paper.view.bounds.center.add(new paper.Point(0, 300))
-			range: 
-				start: 0
-				end: 60 * 4
-
-		timeline.init()
-		
-		
-		timebox = new paper.Path.Rectangle
-			size: [600, 60]
-			fillColor: "#F5F5F5"
-			strokeColor: "#CACACA"
-			video: $('video')[0]
-			cueThreshold: 10
-			getScrubber: ()-> return this.parent.children.scrubber
-			updateScrubber: (e)->
-				scrubber = @getScrubber()
-				scrubber.position.x = e.point.x
-				t = scrubber.getTime()
-				return t
-			onMouseDown: (e)->
-				if this.parent.children.cue then this.parent.children.cue.remove()
-				
-				this.p = new paper.Path
-					strokeColor: "#00A8E1"
-					strokeWidth: 1
-					segments: [e.point]
-				t = this.updateScrubber(e)
-				this.video.currentTime = t
-				this.down = e.point
-				e.stopPropagation()
-			
-			onMouseDrag: (e)->
-				this.p.addSegment(e)
-				dis = e.point.x-this.down.x
-				dir = dis > 0
-				if this.parent.children.cue then this.parent.children.cue.remove()
-				
-				if dis > this.cueThreshold
-					this.cue = new paper.Path.Rectangle
-						parent: this.parent
-						name: "cue"
-						size: [dis, this.bounds.height * 0.9]
-						opacity: 0.5
-						fillColor: "#00A8E1"
-						radius: 2
-					this.cue.pivot = if dir > 0 then this.cue.bounds.leftCenter else this.cue.bounds.rightCenter
-					this.cue.position = this.parent.children.timebar.getNearestPoint(this.down)
-				e.stopPropagation()
-			onMouseUp: (e)->
-				this.p.remove()
-				e.stopPropagation()
-		timeline.pushItem timebox
-		timebar = new paper.Path.Line
-			name: "timebar"
-			parent: timeline
-			to: timebox.bounds.rightCenter
-			from: timebox.bounds.leftCenter
-			strokeColor: "#CACACA"
-			strokeWidth: 1
-			visible: true
-		scrub = new paper.Path.Line
-			parent: timeline
-			name: "scrubber"
-			from: timebox.bounds.topLeft
-			to: timebox.bounds.bottomLeft
-			strokeColor: "#00A8E1"
-			strokeWidth: 2
-			getTime: ()->
-				timebar = this.parent.children.timebar
-				np = timebar.getNearestPoint(this.bounds.center)
-				offset = timebar.getOffsetOf(np)
-				p = offset / timebar.length
-				range = (this.parent.range.end - this.parent.range.start)
-				return this.parent.range.start + range * p
-			gotoTime: (t)->
-				timebar = this.parent.children.timebar
-				range = (this.parent.range.end - this.parent.range.start)
-				if t > this.parent.range.end or t < this.parent.range.start
-					# Timeline needs update;
-					# Need to update the range of the timeline and redraw labels
-					return
-				else
-					p = (t - this.parent.range.start) / range
-					np = timebar.getPointAt(p * timebar.length)
-					this.position.x = np.x
-		$('video').on 'timeupdate', (e)->
-			scrub.gotoTime(this.currentTime)
-			
-		textbox = new paper.Path.Rectangle
-			parent: timeline
-			size: [timebox.bounds.width, 25]
-			strokeColor: "#CACACA"
-			strokeWidth: 1
-			visible: false
-		textbox.pivot = textbox.bounds.topCenter
-		textbox.position = timebox.bounds.bottomCenter
-
-		
-
-		textline = new paper.Path.Line
-			parent: timeline
-			from: textbox.bounds.leftCenter
-			to: textbox.bounds.rightCenter
-			strokeColor: "#CACACA"
-			strokeWidth: 1
-			visible: false
-		
-		start = timeline.range.start
-		range = timeline.range.end - timeline.range.start
-		text = _.range(0, timeline.range.end, Math.ceil(range/10))
-		_.each text, (t)->
-			p = t / timeline.range.end
-			time = start + text
-			tt = new paper.PointText
-				parent: timeline
-				content: window.time(t * 1000)
-				fillColor: new paper.Color("#CACACA")
-				fontFamily: 'Avenir'
-				fontSize: 12
-				fontWeight: "normal"
-				justification: 'center'
-			tt.pivot = tt.bounds.center
-			tt.position = textline.getPointAt(p * textline.length)
-			
+	
 
 
 	makeTracks: (data)->

@@ -320,6 +320,7 @@ class window.LabelGroup extends AlignmentGroup
 		if op.key then this.pushItem op.key
 		if op.text
 			t = new paper.PointText
+				name: "label"
 				content: op.text
 				fillColor: 'black'
 				fontFamily: 'Avenir'
@@ -331,7 +332,7 @@ class window.LabelGroup extends AlignmentGroup
 				hover = new paper.Path.Rectangle
 					parent: this
 					name: "hover"
-					rectangle: this.bounds.expand(15)
+					rectangle: this.bounds.expand(10, 5)
 					radius: 5
 				hover.sendToBack()
 			this.on('mouseenter', (e)-> this.children.hover.fillColor = new paper.Color(0.9, 0.3))
@@ -340,6 +341,23 @@ class window.LabelGroup extends AlignmentGroup
 			this.on('mouseup', (e)-> this.children.hover.fillColor = new paper.Color(0.9, 0.3))
 			this.on('mouseleave', (e)-> this.children.hover.fillColor = new paper.Color(0.9, 0))
 			this.hoverable = true
+			if this.button
+				background = new paper.Path.Rectangle
+					parent: this
+					name: "background"
+					rectangle: hover.bounds
+					radius: 5
+					fillColor: "white"
+					strokeColor: "#CACACA"
+					strokeWidth: 1
+				hover.sendToBack()
+				background.sendToBack()
+				background.set this.button
+			
+	updateLabel: (lab)->
+		this.children.label.content = lab
+		
+
 
 class window.TimePlot extends paper.Group
 	get: (name)->
