@@ -70,15 +70,13 @@ class window.AlignmentGroup extends paper.Group
 
 	configureWindow: ()->
 		if this.moveable
-			this.set
-				onMouseDown: (e)->
-					this.bringToFront()
-				onMouseDrag: (e)->
-					previous = this.position.clone()
-					this.translate e.delta
-					if not paper.view.bounds.contains(this.bounds)
-						this.position = previous
-					e.stopPropagation()	
+			this.on 'mousedown', (e)-> this.bringToFront()
+			this.on 'mousedrag', (e)->
+				previous = this.position.clone()
+				this.translate e.delta
+				if not paper.view.bounds.contains(this.bounds)
+					this.position = previous
+				e.stopPropagation()	
 	reposition: ()->
 		if this.anchor
 			if this.anchor.pivot 

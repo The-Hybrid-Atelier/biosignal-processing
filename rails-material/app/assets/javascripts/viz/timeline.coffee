@@ -1,9 +1,11 @@
 class window.Timeline
-	constructor: ()->
+	constructor: (op)->
+		op = op or {}
+		_.extend this, op
 		timeline = new AlignmentGroup
 			name: "timeline"
 			title: 
-				content: "TIMELINE"
+				content: op.title or "TIMELINE"
 			moveable: true
 			padding: 5
 			orientation: "vertical"
@@ -14,12 +16,11 @@ class window.Timeline
 				radius: 5
 				shadowBlur: 5
 				shadowColor: new paper.Color(0.9)
-			anchor: 
-				pivot: "center"
-				position: paper.view.bounds.center.add(new paper.Point(0, 300))
+			anchor: op.anchor
 			range: 
 				start: 0
 				end: 60 * 4
+			get: (name)-> return this.children[name]			
 			addEnding: ()->
 				d = $('video')[0].duration
 				if buffer = this.children.buffer then buffer.remove()
@@ -38,9 +39,37 @@ class window.Timeline
 		@addTimeLabels(timeline)
 		@addControlUI(timeline)
 		@bindVideoEvents(timeline)
-		this.timeline = timeline
-
+		this.ui = timeline
+	makeTimeLabel: ()->
+		scrubber = this.ui.get("scrubber")
+		t = scrubber.getTime()
+		t_label = new Group
+			name: "t_label"
+			parent: this.ui
+			ui: true
+			onMouseDown: (e)-> this.bringToFront()
+		
+		label = new paper.PointText
+			parent: t_label
+			content: window.time(t * 1000)
+			fillColor: new paper.Color(0.6)
+			fontFamily: 'Avenir'
+			fontSize: 12
+			fontWeight: "normal"
+			justification: 'center'
+			
+		bg = new paper.Path.Rectangle
+			parent: t_label
+			rectangle: t_label.bounds.expand(5, 3)
+			fillColor: "white"
+			radius: 2
+			shadowColor: new paper.Color(0.4)
+			shadowBlur: 2
+		bg.sendToBack()
+		t_label.pivot = t_label.bounds.bottomCenter.add(new paper.Point(0, 5))
+		t_label.position = scrubber.bounds.topCenter
 	addPlot: (timeline)->
+		scope = this
 		timebox = new paper.Path.Rectangle
 			size: [600, 60]
 			fillColor: "#F5F5F5"
@@ -73,34 +102,8 @@ class window.Timeline
 			updateScrubber: (pt)->
 				scrubber = @getP("scrubber")
 				scrubber.setPos(pt.x)
-				@makeTimeLabel(scrubber)
-			makeTimeLabel: (scrubber)->
-				t = scrubber.getTime()
-				t_label = new Group
-					name: "t_label"
-					parent: this.parent
-					ui: true
-					onMouseDown: (e)-> this.bringToFront()
-				
-				label = new paper.PointText
-					parent: t_label
-					content: window.time(t * 1000)
-					fillColor: new paper.Color(0.6)
-					fontFamily: 'Avenir'
-					fontSize: 12
-					fontWeight: "normal"
-					justification: 'center'
-					
-				bg = new paper.Path.Rectangle
-					parent: t_label
-					rectangle: t_label.bounds.expand(5, 3)
-					fillColor: "white"
-					radius: 2
-					shadowColor: new paper.Color(0.4)
-					shadowBlur: 2
-				bg.sendToBack()
-				t_label.pivot = t_label.bounds.bottomCenter.add(new paper.Point(0, 5))
-				t_label.position = scrubber.bounds.topCenter
+				scope.makeTimeLabel()
+			
 			onMouseDown: (e)->
 				@clearUI()
 				this.p = new paper.Path
@@ -165,6 +168,7 @@ class window.Timeline
 				range = (this.parent.range.end - this.parent.range.start)
 				p = (t - this.parent.range.start) / range
 				return {
+					point: timebar.getPointAt(p * timebar.length) 
 					p: p
 					offset: p * timebar.length
 					total: timebar.length
@@ -219,48 +223,49 @@ class window.Timeline
 			tt.pivot = tt.bounds.center
 			tt.position = textline.getPointAt(p * textline.length)
 	addControlUI: (timeline)->
-		buttons = new AlignmentGroup
-			parent: timeline
-			name: "buttons"
-			padding: 3
-			orientation: "horizontal"
-			settings:
-				step: 0.5
-				max: 9
-				min: 0.5
-			anchor: 
-				pivot: "bottomRight"
-				position: timeline.bounds.topRight.add(new paper.Point(0, 15))
+		if this.controls.rate
+			buttons = new AlignmentGroup
+				parent: timeline
+				name: "buttons"
+				padding: 3
+				orientation: "horizontal"
+				settings:
+					step: 0.5
+					max: 9
+					min: 0.5
+				anchor: 
+					pivot: "bottomRight"
+					position: timeline.bounds.topRight.add(new paper.Point(0, 15))
 
-		buttons.pushItem new LabelGroup
-			orientation: "horizontal"
-			padding: 1
-			text: "SPEED +"
-			button: 
-				fillColor: new paper.Color(0.9)
-			onMouseDown: (e)->
-				$('video')[0].playbackRate += this.parent.settings.step
-				if $('video')[0].playbackRate > this.parent.settings.max then $('video')[0].playbackRate = this.parent.settings.max
-				if $('video')[0].playbackRate < this.parent.settings.min then $('video')[0].playbackRate = this.parent.settings.min
-				e.stopPropagation()	
-		rate = new LabelGroup
-			orientation: "horizontal"
-			padding: 1
-			text: "1.0"
-		buttons.pushItem rate
-		buttons.pushItem new LabelGroup
-			orientation: "horizontal"
-			padding: 1
-			text: "SPEED -"
-			button: 
-				fillColor: new paper.Color(0.9)
-			onMouseDown: (e)->
-				$('video')[0].playbackRate -= this.parent.settings.step
-				if $('video')[0].playbackRate > this.parent.settings.max then $('video')[0].playbackRate = this.parent.settings.max
-				if $('video')[0].playbackRate < this.parent.settings.min then $('video')[0].playbackRate = this.parent.settings.min
-				e.stopPropagation()	
-		$('video').on "ratechange", ()->
-			rate.updateLabel this.playbackRate.toFixed(1)
+			buttons.pushItem new LabelGroup
+				orientation: "horizontal"
+				padding: 1
+				text: "SPEED +"
+				button: 
+					fillColor: new paper.Color(0.9)
+				onMouseDown: (e)->
+					$('video')[0].playbackRate += this.parent.settings.step
+					if $('video')[0].playbackRate > this.parent.settings.max then $('video')[0].playbackRate = this.parent.settings.max
+					if $('video')[0].playbackRate < this.parent.settings.min then $('video')[0].playbackRate = this.parent.settings.min
+					e.stopPropagation()	
+			rate = new LabelGroup
+				orientation: "horizontal"
+				padding: 1
+				text: "1.0"
+			buttons.pushItem rate
+			buttons.pushItem new LabelGroup
+				orientation: "horizontal"
+				padding: 1
+				text: "SPEED -"
+				button: 
+					fillColor: new paper.Color(0.9)
+				onMouseDown: (e)->
+					$('video')[0].playbackRate -= this.parent.settings.step
+					if $('video')[0].playbackRate > this.parent.settings.max then $('video')[0].playbackRate = this.parent.settings.max
+					if $('video')[0].playbackRate < this.parent.settings.min then $('video')[0].playbackRate = this.parent.settings.min
+					e.stopPropagation()	
+			$('video').on "ratechange", ()->
+				rate.updateLabel this.playbackRate.toFixed(1)
 	bindVideoEvents: (timeline)->
 		$('video').on 'loadeddata', (e)->
 			timeline.addEnding()
@@ -272,3 +277,100 @@ class window.Timeline
 				this.pause()
 				scrub.position.x = cue.position.x+1
 				this.currentTime = scrub.getTime()
+class window.CodeTimeline extends Timeline
+	load: (codes)->
+		scope = this
+		_.each this.ui.getItems({name: "tag"}), (el)-> el.remove()
+		scrubber = this.ui.get("scrubber")
+		tracks = 3
+		H = scrubber.bounds.height
+		h =  H/tracks
+		track_offset = h/tracks
+		timebox = this.ui.get("timebox")
+
+		tags = []
+		_.each codes.data, (code, i)->
+
+			s = scrubber.probeTime(code.start)
+			e = scrubber.probeTime(code.end)
+			if not e.point then return
+			if not s.point then return
+			dis = e.point.x - s.point.x
+
+			track_iter = 0
+			track_id = i % tracks
+			s.point.y -= H/2
+
+			while track_iter < tracks
+				
+				s.point.y += (track_id * h) + (h/2)
+				all_clear = _.every tags, (t)->
+					return not t.contains(s.point)
+				if all_clear
+					break
+				track_iter++
+				
+				if track_iter >= tracks	
+					break
+				
+				s.point.y -= (track_id * h) + (h/2)
+				
+				track_id += 1
+				if track_id == tracks then track_id = 0 
+				
+			dark = new paper.Color(code.color)
+			dark.brightness -= 0.3
+			c = new paper.Path.Rectangle
+				parent: scope.ui
+				name: "tag"
+				data: 
+					actor: code.actor
+					tags: code.codes
+				size: [dis, h * 0.9]
+				opacity: 1
+				fillColor: code.color
+				radius: 2
+				strokeColor: dark
+				opacity: 0.5
+				onMouseDown: (e)-> 
+					# console.log i
+					timebox.onMouseDown(e)
+				onMouseDrag: (e)-> timebox.onMouseDrag(e)
+				onMouseUp: (e)-> timebox.onMouseUp(e)
+			c.pivot = c.bounds.leftCenter 
+			c.position = s.point
+			tags.push c
+	makeTimeLabel: ()->
+		scrubber = this.ui.get("scrubber")
+		tags = this.ui.getItems({name: "tag"})
+		tags = _.filter tags, (t)-> scrubber.intersects(t)
+		tags = _.map tags, (t)-> 
+			t.data.actor + ": " + t.data.tags.join("→ ")
+		t = scrubber.getTime()
+		t_label = new Group
+			name: "t_label"
+			parent: this.ui
+			ui: true
+			onMouseDown: (e)-> this.bringToFront()
+		
+		t = window.time(t * 1000)
+		tags.push t
+		label = new paper.PointText
+			parent: t_label
+			content: tags.join('\n')
+			fillColor: new paper.Color(0.6)
+			fontFamily: 'Avenir'
+			fontSize: 12
+			fontWeight: "normal"
+			justification: 'center'
+			
+		bg = new paper.Path.Rectangle
+			parent: t_label
+			rectangle: t_label.bounds.expand(5, 3)
+			fillColor: "white"
+			radius: 2
+			shadowColor: new paper.Color(0.4)
+			shadowBlur: 2
+		bg.sendToBack()
+		t_label.pivot = t_label.bounds.bottomCenter.add(new paper.Point(0, 5))
+		t_label.position = scrubber.bounds.topCenter

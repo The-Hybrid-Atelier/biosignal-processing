@@ -26,12 +26,8 @@ $ ->
 		reposition_video: ()->
 			pt = paper.project.getItem({name: "legend"}).bounds.bottomLeft
 			$('#video-container').css
-				top: pt.y
-				left: pt.x
-			# console.log pt
-			# console.log paper.view.viewToProject pt
-			# console.log paper.view.projectToView pt
-
+				top: pt.y + 30
+				left: pt.x + 20
 		ready: ()->
 			scope = this
 			$('.panel').draggable()
@@ -45,18 +41,12 @@ $ ->
 					switch e.key
 						when "space"
 							if this.video.paused then this.video.play() else this.video.pause()
-
-
-			# 	onMouseDown: (e)->
-			# 		console.log e.point.x, e.point.y
 	
 window.exportSVG = ()->
 	exp = paper.project.exportSVG
     asString: true
     precision: 5
   saveAs(new Blob([exp], {type:"application/svg+xml"}), participant_id+"_heater" + ".svg");
-
-
 window.time = (ms)->
   t = new Date(ms).toISOString().slice(11, -5);
   hour = t.slice(0, 3)
@@ -88,17 +78,31 @@ class VizEnvironment
 	renderData: (data)->
 		window.installPaper()
 		@makeLegend(data)
+		
+		this.timeline = new Timeline
+			anchor: 
+				pivot: "center"
+				position: paper.view.bounds.center.add(new paper.Point(0, 300))
+			controls: 
+				rate: true
+		this.codeline = new CodeTimeline
+			title: "CODES"
+			anchor: 
+				pivot: "bottomCenter"
+				position: this.timeline.ui.bounds.topCenter.add(new paper.Point(0, -25))
+			controls: 
+				rate: false
 		@makeTracks(data)
-		this.timeline = new Timeline()
 		@ready()
 
 	
 
 
 	makeTracks: (data)->
+		scope = this
 		# LEGEND CREATION
 		g = new AlignmentGroup
-			name: "legend"
+			name: "users"
 			title: 
 				content: "SESSIONS"
 			moveable: true
@@ -123,7 +127,9 @@ class VizEnvironment
 				text: user
 				onMouseDown: (e)->
 					$('video').attr('src', data.env.video.mp4.url)
-				
+					if codes = data.env.video.codes
+						if scope.codeline
+							scope.codeline.load codes
 			g.pushItem label
 	makeLegend: (data)->		
 		# LEGEND CREATION
@@ -163,7 +169,7 @@ class VizEnvironment
 					activate: true
 				update: ()->
 					codes = paper.project.getItems
-						name: "event"
+						name: "tag"
 						data: 
 							actor: actor
 					if this.data.activate 
@@ -184,7 +190,6 @@ class VizEnvironment
 		root = mapFn(root)
 		_.map root, (data, root)-> 
 			if _.isObject(data) then scope.mapEach(data, mapFn)
-
 	acquireManifest: (callbackFn)->
 		scope = this
 		rtn = $.getJSON data_source, (manifest)-> 
