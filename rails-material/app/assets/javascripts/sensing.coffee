@@ -17,11 +17,13 @@
 #= require viz/timeline
 
 
+
 window.manifest = null
 window.color_scheme = ["red","orange","blue","green","yellow","violet","purple","teal", "pink","brown","grey","black"]
 window.data_source = "/data/compiled.json"
 
 $ ->
+	
 	window.env = new VizEnvironment
 		reposition_video: ()->
 			pt = paper.project.getItem({name: "legend"}).bounds.bottomLeft
@@ -34,7 +36,21 @@ $ ->
 			@reposition_video()
 			$(window).resize ()->
 				scope.reposition_video()
-			
+			$("canvas").on 'wheel', (e)->
+				delta = e.originalEvent.deltaY
+				pt = paper.view.viewToProject(new paper.Point(e.originalEvent.offsetX, e.originalEvent.offsetY))
+				e = _.extend e, 
+					point: pt
+					delta: new paper.Point(e.originalEvent.deltaX, e.originalEvent.deltaY)
+				
+				hits = _.filter paper.project.getItems({data: {class: "Timeline"}}), (el)->
+					return el.contains(pt)
+				_.each hits, (el)-> el.emit "mousedrag", e
+			$('video').on 'loadeddata', (e)->
+				_.each Timeline.lines, (line)->
+					line.ui.video = this
+					line.ui.range.timestamp = Timeline.ts
+					line.refresh()	
 			paper.tool = new paper.Tool
 				video: $('video')[0]
 				onKeyDown: (e)->
@@ -47,16 +63,6 @@ window.exportSVG = ()->
     asString: true
     precision: 5
   saveAs(new Blob([exp], {type:"application/svg+xml"}), participant_id+"_heater" + ".svg");
-window.time = (ms)->
-  t = new Date(ms).toISOString().slice(11, -5);
-  hour = t.slice(0, 3)
-  if hour == "00:"
-  	t =  t.slice(3)
-  if t.slice(0, 2) == "00"
-  	return t
-  if t.slice(0, 1) == "0" 
-  	t = t.slice(1)
-  return t
 
   	
 class VizEnvironment
@@ -85,6 +91,7 @@ class VizEnvironment
 				position: paper.view.bounds.center.add(new paper.Point(0, 300))
 			controls: 
 				rate: true
+		Timeline.load data.activity.cesar.env.video
 		this.codeline = new CodeTimeline
 			title: "CODES"
 			anchor: 
@@ -92,6 +99,15 @@ class VizEnvironment
 				position: this.timeline.ui.bounds.topCenter.add(new paper.Point(0, -25))
 			controls: 
 				rate: false
+
+		this.sensorline = new SensorTimeline
+			title: "SENSOR"
+			anchor: 
+				pivot: "bottomCenter"
+				position: this.codeline.ui.bounds.topCenter.add(new paper.Point(0, -50))
+			controls: 
+				rate: false
+
 		@makeTracks(data)
 		@ready()
 
@@ -116,8 +132,9 @@ class VizEnvironment
 				shadowColor: new paper.Color(0.9)
 			anchor: 
 				pivot: "topLeft"
-				position: paper.view.bounds.topLeft.add(new paper.Point(30, 430))
+				position: paper.view.bounds.topLeft.add(new paper.Point(5, 430))
 		g.init()
+
 
 		_.each data.activity, (data, user)->
 			
@@ -126,10 +143,14 @@ class VizEnvironment
 				padding: 5
 				text: user
 				onMouseDown: (e)->
-					$('video').attr('src', data.env.video.mp4.url)
+					Timeline.load data.env.video
 					if codes = data.env.video.codes
 						if scope.codeline
 							scope.codeline.load codes
+					if iron_acc = data.iron.imu.G
+						if scope.sensorline
+							scope.sensorline.load iron_acc
+
 			g.pushItem label
 	makeLegend: (data)->		
 		# LEGEND CREATION

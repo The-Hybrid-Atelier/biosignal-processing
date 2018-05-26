@@ -1,12 +1,25 @@
+#= require_self
+#= require viz/code_timeline
+window.human_time = (t)->
+	return moment(t * 1000).format("MM/DD hh:mm:ss")
+window.simple_time = (t)->
+	return moment(t * 1000).format("hh:mm:ss")
 class window.Timeline
+	@lines: []
+	@load: (video)->
+		Timeline.ts = video.raw.timestamp
+		$('video').attr('src', video.mp4.url)
+
+	@ts: null	
 	constructor: (op)->
 		op = op or {}
+		scope = this
 		_.extend this, op
 		timeline = new AlignmentGroup
 			name: "timeline"
 			title: 
 				content: op.title or "TIMELINE"
-			moveable: true
+			moveable: false
 			padding: 5
 			orientation: "vertical"
 			video: $('video')[0]
@@ -18,46 +31,86 @@ class window.Timeline
 				shadowColor: new paper.Color(0.9)
 			anchor: op.anchor
 			range: 
-				start: 0
-				end: 60 * 4
-			get: (name)-> return this.children[name]			
+				start: 60 * 0
+				end: 60 * 5
+			data:
+				class: "Timeline"		
+			get: (name)-> return this.children[name]
+			onMouseDrag: (e)->
+				if e.type == "wheel"
+					if e.shiftKey
+						this.range.end += e.delta.x/2
+						this.range.start -= e.delta.x/2
+						scope.refresh()
+					else
+						this.range.start += e.delta.y
+						this.range.end += e.delta.y
+						scope.refresh()
+						
 			addEnding: ()->
-				d = $('video')[0].duration
-				if buffer = this.children.buffer then buffer.remove()
-				if d < timeline.range.end
+				d = $('video')[0].duration + timeline.range.timestamp
+				timebox = this.children.timebox
+				
+				# end_buffer
+				if end_buffer = this.children.end_buffer then end_buffer.remove()
+				end = timeline.range.timestamp + timeline.range.end
+				if d < end
 					dim = this.children.scrubber.probeTime(d)
+					width = _.min([dim.total - dim.offset, timebox.bounds.width])
 					buffer = new paper.Path.Rectangle
 						parent: this
-						name: "buffer"
-						size: [dim.total - dim.offset, this.children.timebox.bounds.height]
+						name: "end_buffer"
+						size: [width, timebox.bounds.height]
 						fillColor: new paper.Color(0)
 						opacity: 0.5
 					buffer.pivot = buffer.bounds.rightCenter
-					buffer.position = this.children.timebox.bounds.rightCenter
+					buffer.position = timebox.bounds.rightCenter
+
+				if start_buffer = this.children.start_buffer then start_buffer.remove()
+				
+				ts = timeline.range.timestamp
+				if timeline.range.start < 0
+					dim = this.children.scrubber.probeTime(ts)
+					width = _.min([dim.offset, timebox.bounds.width])
+					buffer = new paper.Path.Rectangle
+						parent: this
+						name: "start_buffer"
+						size: [width, timebox.bounds.height]
+						fillColor: new paper.Color(0)
+						opacity: 0.5
+					buffer.pivot = buffer.bounds.leftCenter
+					buffer.position = timebox.bounds.leftCenter
+
+
 		timeline.init()
+		this.ui = timeline
 		@addPlot(timeline)
-		@addTimeLabels(timeline)
+
+
 		@addControlUI(timeline)
 		@bindVideoEvents(timeline)
-		this.ui = timeline
-	makeTimeLabel: ()->
+		
+		Timeline.lines.push this
+
+	refresh: ()->
+		this.ui.addEnding()
+		this.addTimeLabels()
+	make_label: (content)->
 		scrubber = this.ui.get("scrubber")
-		t = scrubber.getTime()
+		_.each this.ui.getItems({name: "t_label"}), (el)-> el.remove()
 		t_label = new Group
 			name: "t_label"
 			parent: this.ui
 			ui: true
 			onMouseDown: (e)-> this.bringToFront()
-		
 		label = new paper.PointText
 			parent: t_label
-			content: window.time(t * 1000)
+			content: content
 			fillColor: new paper.Color(0.6)
 			fontFamily: 'Avenir'
 			fontSize: 12
 			fontWeight: "normal"
 			justification: 'center'
-			
 		bg = new paper.Path.Rectangle
 			parent: t_label
 			rectangle: t_label.bounds.expand(5, 3)
@@ -67,7 +120,13 @@ class window.Timeline
 			shadowBlur: 2
 		bg.sendToBack()
 		t_label.pivot = t_label.bounds.bottomCenter.add(new paper.Point(0, 5))
-		t_label.position = scrubber.bounds.topCenter
+		t_label.position = scrubber.bounds.topCenter	
+	makeTimeLabel: ()->
+		ms = this.ui.range.timestamp
+		scrubber = this.ui.get("scrubber")
+		t = scrubber.getTime()
+		t = moment((ms + t) * 1000).format("hh:mm:ss A")
+		@make_label(t)
 	addPlot: (timeline)->
 		scope = this
 		timebox = new paper.Path.Rectangle
@@ -149,7 +208,7 @@ class window.Timeline
 			strokeWidth: 2
 			setPos: (x)->
 				this.position.x = x
-				timeline.video.currentTime = this.getTime()
+				$('video')[0].currentTime = this.getTime()
 			getPos: ()-> return this.bounds.center
 			getOffset: ()->
 				timebar = this.parent.children.timebar
@@ -164,6 +223,7 @@ class window.Timeline
 				return this.parent.range.start + range * @getP()
 
 			probeTime: (t)->
+				t = t - this.parent.range.timestamp
 				timebar = this.parent.children.timebar
 				range = (this.parent.range.end - this.parent.range.start)
 				p = (t - this.parent.range.start) / range
@@ -175,6 +235,7 @@ class window.Timeline
 				}
 			gotoTime: (t)->
 				timebar = this.parent.children.timebar
+				timebox = this.parent.children.timebox
 				range = (this.parent.range.end - this.parent.range.start)
 				if t > this.parent.range.end or t < this.parent.range.start
 					# Timeline needs update;
@@ -184,11 +245,11 @@ class window.Timeline
 					p = (t - this.parent.range.start) / range
 					np = timebar.getPointAt(p * timebar.length)
 					this.position.x = np.x
-	addTimeLabels: (timeline)->
-		# time label container
-		timebox = timeline.children.timebox
+				scope.makeTimeLabel()
+
 		textbox = new paper.Path.Rectangle
 			parent: timeline
+			name: "textbox"
 			size: [timebox.bounds.width, 25]
 			strokeColor: "#CACACA"
 			strokeWidth: 1
@@ -199,22 +260,37 @@ class window.Timeline
 		
 		textline = new paper.Path.Line
 			parent: timeline
+			name: "textline"
 			from: textbox.bounds.leftCenter
 			to: textbox.bounds.rightCenter
 			strokeColor: "#CACACA"
 			strokeWidth: 1
 			visible: false
-		
+	addTimeLabels: ()->
+		# time label container
+		timeline = this.ui
+		timebox = timeline.children.timebox
+		textline = timeline.children.textline
+		textbox = timeline.children.textbox
+
+		_.each timeline.getItems({name: "timelabel"}), (t)-> t.remove()
+
+		ms = this.ui.range.timestamp
+		# console.log "TS", moment(ms * 1000).format("MM/DD/YY hh:mm A")
+			
 		start = timeline.range.start
-		range = timeline.range.end - timeline.range.start
-		text = _.range(0, timeline.range.end, Math.ceil(range/10)) #10 labels max
+		end = timeline.range.end
+		range = end-start
+		text = _.range(0, range, Math.ceil(range/5)) #10 labels max
 
 		_.each text, (t)->
-			p = t / timeline.range.end
+			p = t / range
+			t = t + start
 			time = start + text
 			tt = new paper.PointText
 				parent: timeline
-				content: window.time(t * 1000)
+				name: "timelabel"
+				content: moment((ms + t) * 1000).format("hh:mm:ss A")
 				fillColor: new paper.Color("#CACACA")
 				fontFamily: 'Avenir'
 				fontSize: 12
@@ -267,8 +343,6 @@ class window.Timeline
 			$('video').on "ratechange", ()->
 				rate.updateLabel this.playbackRate.toFixed(1)
 	bindVideoEvents: (timeline)->
-		$('video').on 'loadeddata', (e)->
-			timeline.addEnding()
 		$('video').on 'timeupdate', (e)->
 			scrub = timeline.children.scrubber
 			scrub.gotoTime(this.currentTime)
@@ -277,100 +351,3 @@ class window.Timeline
 				this.pause()
 				scrub.position.x = cue.position.x+1
 				this.currentTime = scrub.getTime()
-class window.CodeTimeline extends Timeline
-	load: (codes)->
-		scope = this
-		_.each this.ui.getItems({name: "tag"}), (el)-> el.remove()
-		scrubber = this.ui.get("scrubber")
-		tracks = 3
-		H = scrubber.bounds.height
-		h =  H/tracks
-		track_offset = h/tracks
-		timebox = this.ui.get("timebox")
-
-		tags = []
-		_.each codes.data, (code, i)->
-
-			s = scrubber.probeTime(code.start)
-			e = scrubber.probeTime(code.end)
-			if not e.point then return
-			if not s.point then return
-			dis = e.point.x - s.point.x
-
-			track_iter = 0
-			track_id = i % tracks
-			s.point.y -= H/2
-
-			while track_iter < tracks
-				
-				s.point.y += (track_id * h) + (h/2)
-				all_clear = _.every tags, (t)->
-					return not t.contains(s.point)
-				if all_clear
-					break
-				track_iter++
-				
-				if track_iter >= tracks	
-					break
-				
-				s.point.y -= (track_id * h) + (h/2)
-				
-				track_id += 1
-				if track_id == tracks then track_id = 0 
-				
-			dark = new paper.Color(code.color)
-			dark.brightness -= 0.3
-			c = new paper.Path.Rectangle
-				parent: scope.ui
-				name: "tag"
-				data: 
-					actor: code.actor
-					tags: code.codes
-				size: [dis, h * 0.9]
-				opacity: 1
-				fillColor: code.color
-				radius: 2
-				strokeColor: dark
-				opacity: 0.5
-				onMouseDown: (e)-> 
-					# console.log i
-					timebox.onMouseDown(e)
-				onMouseDrag: (e)-> timebox.onMouseDrag(e)
-				onMouseUp: (e)-> timebox.onMouseUp(e)
-			c.pivot = c.bounds.leftCenter 
-			c.position = s.point
-			tags.push c
-	makeTimeLabel: ()->
-		scrubber = this.ui.get("scrubber")
-		tags = this.ui.getItems({name: "tag"})
-		tags = _.filter tags, (t)-> scrubber.intersects(t)
-		tags = _.map tags, (t)-> 
-			t.data.actor + ": " + t.data.tags.join("→ ")
-		t = scrubber.getTime()
-		t_label = new Group
-			name: "t_label"
-			parent: this.ui
-			ui: true
-			onMouseDown: (e)-> this.bringToFront()
-		
-		t = window.time(t * 1000)
-		tags.push t
-		label = new paper.PointText
-			parent: t_label
-			content: tags.join('\n')
-			fillColor: new paper.Color(0.6)
-			fontFamily: 'Avenir'
-			fontSize: 12
-			fontWeight: "normal"
-			justification: 'center'
-			
-		bg = new paper.Path.Rectangle
-			parent: t_label
-			rectangle: t_label.bounds.expand(5, 3)
-			fillColor: "white"
-			radius: 2
-			shadowColor: new paper.Color(0.4)
-			shadowBlur: 2
-		bg.sendToBack()
-		t_label.pivot = t_label.bounds.bottomCenter.add(new paper.Point(0, 5))
-		t_label.position = scrubber.bounds.topCenter
