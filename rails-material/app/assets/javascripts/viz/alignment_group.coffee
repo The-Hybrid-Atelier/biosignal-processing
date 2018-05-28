@@ -1,9 +1,32 @@
+# EXAMPLE_USAGE
+# g = new AlignmentGroup
+# 	name: "users"
+# 	title: 
+# 		content: "SESSIONS"
+# 	moveable: true
+# 	padding: 5
+# 	orientation: "vertical"
+# 	background: 
+# 		fillColor: "white"
+# 		padding: 5
+# 		radius: 5
+# 		shadowBlur: 5
+# 		shadowColor: new paper.Color(0.9)
+# 	anchor: 
+# 		pivot: "topLeft"
+# 		object: paper.view
+# 		magnet: "topLeft"
+# 		offset: new paper.Point(5, 430)
+
 class window.AlignmentGroup extends paper.Group
+	init: ()->
+		this.on 'mousedown', (e)-> this.bringToFront()
 	pushItem: (obj)->
-		_.each this.getItems({data: {ui: true}}), (el)-> el.remove()
-		
+		wipe this, {data: {ui: true}}
 		lc = this.lastChild		
 		obj.parent = this
+		obj.data.item = true
+
 		if lc
 			switch this.orientation
 				when "vertical"
@@ -14,6 +37,11 @@ class window.AlignmentGroup extends paper.Group
 					obj.pivot = obj.bounds.leftCenter
 					obj.position = lc.bounds.rightCenter.add(new paper.Point(this.padding, 0))
 					obj.pivot = obj.bounds.center
+	
+		@ui_elements()
+		@reposition()
+
+	ui_elements: ()->
 		if this.background
 			if this.children.background then this.children.background.remove()
 			if this.background.padding
@@ -29,11 +57,6 @@ class window.AlignmentGroup extends paper.Group
 				radius: 0 or this.background.radius 
 			bg.set this.background
 			bg.sendToBack()
-
-		
-		@ui_elements()
-		@reposition()
-	ui_elements: ()->
 		if this.moveable and this.children.length != 0
 			handle = new paper.Path.Rectangle
 				parent: this
@@ -44,6 +67,12 @@ class window.AlignmentGroup extends paper.Group
 				strokeWidth: 1
 				data: 
 					ui: true
+				onMouseDrag: (e)->
+					previous = this.parent.position.clone()
+					this.parent.translate e.delta
+					if not paper.view.bounds.contains(this.parent.bounds)
+						this.parent.position = previous
+					e.stopPropagation()	
 
 			handle.pivot = handle.bounds.rightCenter.subtract(new paper.Point(5, 0))
 			handle.position = this.children.background.bounds.leftCenter
@@ -65,18 +94,11 @@ class window.AlignmentGroup extends paper.Group
 			t = new paper.PointText ops
 			t.pivot = t.bounds.bottomLeft
 			t.position = this.children.background.bounds.topLeft.add(new paper.Point(10,-3))
-	init: ()->
-		@configureWindow()
-
-	configureWindow: ()->
-		if this.moveable
-			this.on 'mousedown', (e)-> this.bringToFront()
-			this.on 'mousedrag', (e)->
-				previous = this.position.clone()
-				this.translate e.delta
-				if not paper.view.bounds.contains(this.bounds)
-					this.position = previous
-				e.stopPropagation()	
+	clear: ()->
+		wipe this, {data: {item: true}}
+		wipe this, {data: {ui: true}}
+		@ui_elements()
+		@reposition()
 	reposition: ()->
 		if this.anchor
 			if this.anchor.pivot 

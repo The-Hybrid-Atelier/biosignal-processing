@@ -47,7 +47,7 @@ $ ->
 	grabber = new DataGrabber
 		success: (data)-> env.renderData(data)
 
-  	
+		
 class VizEnvironment
 	constructor: (op)->
 		_.extend this, op
@@ -158,6 +158,7 @@ class VizEnvironment
 				padding: 5
 				text: user
 				onMouseDown: (e)->
+					actors_panel.clear()
 					_.each _.keys(data), (actor)->
 						l = new LabelGroup
 							orientation: "horizontal"

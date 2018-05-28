@@ -14,3 +14,5 @@ window.exportSVG = ()->
     precision: 5
   saveAs(new Blob([exp], {type:"application/svg+xml"}), participant_id+"_heater" + ".svg");
 
+window.wipe = (caller, match)->
+  _.each caller.getItems(match), (el)-> el.remove()
