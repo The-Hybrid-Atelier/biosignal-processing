@@ -1,7 +1,6 @@
 # Place all the behaviors and hooks related to the matching controller here.
 # All this logic will automatically be available in application.js.
 # You can use CoffeeScript in this file: http://coffeescript.org/
-#= require papaparse.min
 #= require moment
 #= require paper
 #= require jquery-ui/core
@@ -9,33 +8,19 @@
 #= require jquery-ui/position
 #= require jquery-ui/widgets/mouse
 #= require jquery-ui/widgets/draggable
-#= require jquery-ui/widgets/droppable
-#= require jquery-ui/widgets/resizable
-#= require jquery-ui/widgets/selectable
-#= require jquery-ui/widgets/sortable
 #= require viz
-#= require viz/timeline
 
-
-
-window.manifest = null
-window.color_scheme = ["red","orange","blue","green","yellow","violet","purple","teal", "pink","brown","grey","black"]
-window.data_source = "/data/compiled.json"
 
 $ ->
-	
 	window.env = new VizEnvironment
-		reposition_video: ()->
-			pt = paper.project.getItem({name: "legend"}).bounds.bottomLeft
-			$('#video-container').css
-				top: pt.y + 30
-				left: pt.x + 20
 		ready: ()->
 			scope = this
+			@event_binding()
+			@keybinding()
+		event_binding: ()->
 			$('.panel').draggable()
 			@reposition_video()
-			$(window).resize ()->
-				scope.reposition_video()
+			$(window).resize ()-> scope.reposition_video()
 			$("canvas").on 'wheel', (e)->
 				delta = e.originalEvent.deltaY
 				pt = paper.view.viewToProject(new paper.Point(e.originalEvent.offsetX, e.originalEvent.offsetY))
@@ -50,7 +35,8 @@ $ ->
 				_.each Timeline.lines, (line)->
 					line.ui.video = this
 					line.ui.range.timestamp = Timeline.ts
-					line.refresh()	
+					line.refresh()
+		keybinding: ()->				
 			paper.tool = new paper.Tool
 				video: $('video')[0]
 				onKeyDown: (e)->
@@ -58,11 +44,8 @@ $ ->
 						when "space"
 							if this.video.paused then this.video.play() else this.video.pause()
 	
-window.exportSVG = ()->
-	exp = paper.project.exportSVG
-    asString: true
-    precision: 5
-  saveAs(new Blob([exp], {type:"application/svg+xml"}), participant_id+"_heater" + ".svg");
+	grabber = new DataGrabber
+		success: (data)-> env.renderData(data)
 
   	
 class VizEnvironment
@@ -79,7 +62,11 @@ class VizEnvironment
 				2: "blue"
 			render_iron_imu: false
 			render_codes: true
-		@acquireManifest(@renderData)
+	reposition_video: ()->
+		pt = paper.project.getItem({name: "legend"}).bounds.bottomLeft
+		$('#video-container').css
+			top: pt.y + 30
+			left: pt.x + 20
 		
 	renderData: (data)->
 		window.installPaper()
@@ -88,7 +75,9 @@ class VizEnvironment
 		this.timeline = new Timeline
 			anchor: 
 				pivot: "center"
-				position: paper.view.bounds.center.add(new paper.Point(0, 300))
+				object: paper.view
+				magnet: "center"
+				offset: new paper.Point(0, 300)
 			controls: 
 				rate: true
 		Timeline.load data.activity.cesar.env.video
@@ -96,7 +85,9 @@ class VizEnvironment
 			title: "CODES"
 			anchor: 
 				pivot: "bottomCenter"
-				position: this.timeline.ui.bounds.topCenter.add(new paper.Point(0, -25))
+				object: this.timeline.ui
+				magnet: "topCenter"
+				offset: new paper.Point(0, -25)
 			controls: 
 				rate: false
 
@@ -104,7 +95,9 @@ class VizEnvironment
 			title: "SENSOR"
 			anchor: 
 				pivot: "bottomCenter"
-				position: this.codeline.ui.bounds.topCenter.add(new paper.Point(0, -50))
+				object: this.codeline.ui
+				magnet: "topCenter"
+				offset: new paper.Point(0, -50)
 			controls: 
 				rate: false
 
@@ -132,10 +125,32 @@ class VizEnvironment
 				shadowColor: new paper.Color(0.9)
 			anchor: 
 				pivot: "topLeft"
-				position: paper.view.bounds.topLeft.add(new paper.Point(5, 430))
+				object: paper.view
+				magnet: "topLeft"
+				offset: new paper.Point(5, 430)
 		g.init()
 
-
+		actors_panel = new AlignmentGroup
+			name: "actors"
+			title: 
+				content: "ACTORS"
+			moveable: true
+			padding: 5
+			orientation: "vertical"
+			background: 
+				fillColor: "white"
+				padding: 5
+				radius: 5
+				shadowBlur: 5
+				shadowColor: new paper.Color(0.9)
+			anchor: 
+				pivot: "topCenter"
+				object: g
+				magnet: "bottomCenter"
+				offset: new paper.Point(0, 5)
+				# position: g.bounds.bottomCenter
+		actors_panel.init()
+		
 		_.each data.activity, (data, user)->
 			
 			label = new LabelGroup
@@ -143,6 +158,12 @@ class VizEnvironment
 				padding: 5
 				text: user
 				onMouseDown: (e)->
+					_.each _.keys(data), (actor)->
+						l = new LabelGroup
+							orientation: "horizontal"
+							padding: 5
+							text: actor
+						actors_panel.pushItem l
 					Timeline.load data.env.video
 					if codes = data.env.video.codes
 						if scope.codeline
@@ -206,53 +227,6 @@ class VizEnvironment
 
 
 	
-	mapEach: (root, mapFn)->
-		scope = this
-		root = mapFn(root)
-		_.map root, (data, root)-> 
-			if _.isObject(data) then scope.mapEach(data, mapFn)
-	acquireManifest: (callbackFn)->
-		scope = this
-		rtn = $.getJSON data_source, (manifest)-> 
-			window.manifest = manifest
-
-			# RESOLVE JSON FILES
-			scope.mapEach manifest, (obj)->
-				if not obj.url then return obj
-				filetype = obj.url.split('.').slice(-1)[0] 
-				switch filetype
-					when "json"
-						return _.extend obj, 
-							data: $.ajax({dataType: "json", url: obj.url, async: false}).responseJSON
-					else
-						return obj
-			
-			# ZIP adjustment
-			_.each manifest, (data, user)->
-				if data.iron.imu
-					manifest[user].iron.imu = data.iron.imu.various.data
-
-
-			# EXTRACT AUTHORS
-			actors = _.values manifest
-			actors = _.pluck actors, "env"
-			actors = _.flatten _.pluck actors, "video"
-			actors = _.flatten _.pluck actors, "codes"
-			actors = _.flatten _.pluck actors, "data"
-			actors = _.unique _.pluck actors, "actor"
-			actors = _.object _.map actors, (a, i)-> 
-				[a, color_scheme[i]]
-
-			# console.log "actors", actors
-			
-			# ATTACH COLOR
-			_.each manifest, (data, user)->
-				manifest[user].env.video.codes.data = _.map data.env.video.codes.data, (code)->
-					_.extend code, 
-						color: actors[code.actor]
 	
-			callbackFn.apply scope, [
-				activity: manifest
-				actors: actors
-			]
+	
 
