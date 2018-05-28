@@ -2,13 +2,11 @@ class window.CodeTimeline extends Timeline
 	refresh: ()->
 		super()
 		this.draw()
-	load: (data)->
-		this.data = data
+
 	draw: ()->
 		scope = this
 		_.each this.ui.getItems({name: "tag"}), (el)-> el.remove()
 		if not this.data then return
-
 		scrubber = this.ui.get("scrubber")
 		tracks = 3
 		H = scrubber.bounds.height
@@ -119,8 +117,7 @@ class window.SensorTimeline extends Timeline
 	refresh: ()->
 		super()
 		this.draw()
-	load: (data)->
-		this.data = data
+
 	get_minmax: (data, axis)->
 		h_max = _.map data, (line)->
 			pt = _.max line, (pt)-> return pt[axis]
@@ -190,7 +187,6 @@ class window.SensorTimeline extends Timeline
 			return line
 
 		plot_height = timebox.bounds.height
-		console.log h.range
 		lw_max = (_.max lines, (line)-> return line.bounds.width).bounds.width			
 		_.each lines, (line)-> line.scaling.x = (plot_width)/lw_max
 		_.each lines, (line)-> line.scaling.y = (plot_height - 10)/h.range

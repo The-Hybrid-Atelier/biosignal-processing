@@ -4,13 +4,15 @@ class window.LabelGroup extends AlignmentGroup
 		super op
 		if op.key then this.pushItem op.key
 		if op.text
-			t = new paper.PointText
+			op.text = if _.isString op.text then {content: op.text} else op.text
+			ops = 
 				name: "label"
-				content: op.text
 				fillColor: 'black'
 				fontFamily: 'Avenir'
 				fontWeight: 'bold'
-				fontSize: 12		
+				fontSize: 12	
+			ops = _.extend ops, op.text
+			t = new paper.PointText ops
 			this.pushItem t
 		if not this.hoverable
 			if not this.children.hover

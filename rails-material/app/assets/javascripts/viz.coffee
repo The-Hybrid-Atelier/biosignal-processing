@@ -1,4 +1,5 @@
 #= require viz/data_grabber
+#= require viz/environment
 #= require viz/alignment_group
 #= require viz/label_group
 #= require viz/timeline
@@ -16,3 +17,6 @@ window.exportSVG = ()->
 
 window.wipe = (caller, match)->
   _.each caller.getItems(match), (el)-> el.remove()
+
+String.prototype.capitalize = ()->
+  return this.charAt(0).toUpperCase() + this.slice(1)

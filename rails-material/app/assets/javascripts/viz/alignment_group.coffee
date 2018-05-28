@@ -3,6 +3,7 @@
 # 	name: "users"
 # 	title: 
 # 		content: "SESSIONS"
+# 		orientation: "vertical"
 # 	moveable: true
 # 	padding: 5
 # 	orientation: "vertical"
@@ -21,6 +22,7 @@
 class window.AlignmentGroup extends paper.Group
 	init: ()->
 		this.on 'mousedown', (e)-> this.bringToFront()
+		return this
 	pushItem: (obj)->
 		wipe this, {data: {ui: true}}
 		lc = this.lastChild		
@@ -28,10 +30,14 @@ class window.AlignmentGroup extends paper.Group
 		obj.data.item = true
 
 		if lc
+			this.alignment = this.alignment or "center"
 			switch this.orientation
 				when "vertical"
-					obj.pivot = obj.bounds.topCenter
-					obj.position = lc.bounds.bottomCenter.add(new paper.Point(0, this.padding))
+					pinA = "top" + this.alignment.capitalize()
+					pinB = "bottom" + this.alignment.capitalize()
+					
+					obj.pivot = obj.bounds[pinA]
+					obj.position = lc.bounds[pinB].add(new paper.Point(0, this.padding))
 					obj.pivot = obj.bounds.center
 				when "horizontal"
 					obj.pivot = obj.bounds.leftCenter
@@ -85,15 +91,24 @@ class window.AlignmentGroup extends paper.Group
 				fontFamily: 'Adobe Gothic Std'
 				fontSize: 12
 				fontWeight: "bold"
-				justification: 'left'
+				justification: 'center'
 				data:
 					ui: true
-				
-			ops = _.extend ops, this.title
 			
+			ops = _.extend ops, this.title
+
 			t = new paper.PointText ops
-			t.pivot = t.bounds.bottomLeft
-			t.position = this.children.background.bounds.topLeft.add(new paper.Point(10,-3))
+			
+			if not this.title.orientation
+				t.pivot = t.bounds.bottomLeft
+				t.position = this.children.background.bounds.topLeft.add(new paper.Point(10,-3))
+			else
+				t.rotation = -90
+				t.position = this.children.background.bounds.leftCenter.add(new paper.Point(0,0))	
+				t.pivot = t.bounds.rightCenter
+				t.position = this.children.background.bounds.leftCenter.add(new paper.Point(t.bounds.width * 1.8,0))
+			
+				
 	clear: ()->
 		wipe this, {data: {item: true}}
 		wipe this, {data: {ui: true}}

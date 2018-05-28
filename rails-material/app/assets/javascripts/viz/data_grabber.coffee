@@ -21,7 +21,11 @@ class window.DataGrabber
 		# ZIP adjustment
 		_.each manifest, (data, user)->
 			if data.iron.imu
-				manifest[user].iron.imu = data.iron.imu.various.data
+				imu_data = _.mapObject data.iron.imu.various.data, (data, channel)->
+					_.extend data,
+						type: "sensor_plot"
+
+				manifest[user].iron.imu = imu_data
 	processData: (manifest)->
 		# EXTRACT AUTHORS
 		actors = _.values manifest

@@ -11,6 +11,9 @@ class window.Timeline
 		$('video').attr('src', video.mp4.url)
 
 	@ts: null	
+	load: (data)->
+		this.data = data
+		this.refresh()
 	constructor: (op)->
 		op = op or {}
 		scope = this
@@ -19,6 +22,7 @@ class window.Timeline
 			name: "timeline"
 			title: 
 				content: op.title or "TIMELINE"
+				orientation: 'vertical'
 			moveable: false
 			padding: 5
 			orientation: "vertical"
@@ -311,7 +315,8 @@ class window.Timeline
 					min: 0.5
 				anchor: 
 					pivot: "bottomRight"
-					position: timeline.bounds.topRight.add(new paper.Point(0, 15))
+					position: timeline.bounds.topRight
+					offset: new paper.Point(0, -5)
 
 			buttons.pushItem new LabelGroup
 				orientation: "horizontal"
@@ -340,6 +345,7 @@ class window.Timeline
 					if $('video')[0].playbackRate > this.parent.settings.max then $('video')[0].playbackRate = this.parent.settings.max
 					if $('video')[0].playbackRate < this.parent.settings.min then $('video')[0].playbackRate = this.parent.settings.min
 					e.stopPropagation()	
+		
 			$('video').on "ratechange", ()->
 				rate.updateLabel this.playbackRate.toFixed(1)
 	bindVideoEvents: (timeline)->
