@@ -1,0 +1,112 @@
+.ui.bottom.attached.tab.segment{"data-tab" => "theory"}
+  %h1.ui.header Theory
+  %p.large.text
+    Imagine that electricity is water flowing from a lake on top of a mountain at height
+    %span.connection.red 5 V
+    flowing down to the ocean at height
+    %span.connection.black 0 V (also known as ground).
+    The river that forms could be made extra wide, in which case the lake would quickly flow down the mountain. 
+    If the river is made extra thin, then it will take a much longer time for the water to move. 
+  .ui.three.cards
+    .card
+      .image
+        .thermopainting
+          .cool
+            = image_tag "/guide/examples/developed/volcano-cool.jpg", class: ""
+          .heat
+            = image_tag "/guide/examples/developed/volcano-hot.jpg", class: ""    
+      .ui.buttons
+        %button.ui.button.cool.blue
+          %i.icon.snowflake
+          UNPOWERED
+        .or
+        %button.ui.button.heat
+          %i.icon.fire
+          POWERED
+      .content
+        .header The Water Metaphor
+        .meta
+          A snowman is rendered with 
+          .tc TC 
+          paints.
+        .description
+          %p Electricity flow through a voltage source to ground along some conductive 'river'. The collisions in the river get converted into heat. 
+    .card
+      .image
+        .thermopainting
+          .cool
+            = image_tag "/guide/examples/developed/circuit-cool.jpg", class: ""
+          .heat
+            = image_tag "/guide/examples/developed/circuit-hot.jpg", class: ""    
+      .ui.buttons
+        %button.ui.button.cool.blue
+          %i.icon.snowflake
+          UNPOWERED
+        .or
+        %button.ui.button.heat
+          %i.icon.fire
+          POWERED
+      .content
+        .header A Resistive Heater
+        .meta
+          A purple 
+          .tc TC 
+          wash is applied over an apple 
+          .c C 
+          underpainting. 
+        .description
+          %p Electrodes are attached from a power source to signify where power and ground is. The power supply allows you to set how much voltage to apply. 
+          %p Heat will radiate from the trace.
+  
+    
+  %h1.ui.header Working with Heat
+
+  .ui.two.column.grid.large.text
+    .column
+
+      .ui.ignored.info.attached.message
+        %h3.ui.header WHAT IS HEAT?
+        
+        %p Heat is the amount of erosion that occurs.
+        
+      .ui.ignored.warning.attached.message
+        %h3.ui.header INCREASING HEAT
+        %p If you wanted more erosion (heat) to occur, you could do either of the following: 
+    
+        .ui.middle.aligned.divided.list.ordered
+          .item 
+            Increase the 
+            %b height 
+            of the mountain (water will flow more quickly)
+          .item 
+            Increase the 
+            %b size 
+            of the river (water will flow more quickly)
+    .column
+      .ui.ignored.info.attached.message
+        %h3.ui.header WHAT IS HEAT?
+        %p Joule heating, is also known as resistive or ohmic heating. Electric energy is converted to heat through resistive losses in the material. The power dissipated by the resistor is proportional to the square of the current. When the current flows, heat disperses from the resistor. 
+      .ui.ignored.warning.attached.message
+      
+        %h3.ui.header INCREASING HEAT
+        %p Increasing power dissipation can be done by doing either of the following:
+        .ui.middle.aligned.divided.list.ordered
+          .item 
+            Increasing the
+            %b voltage 
+          .item 
+            Decreasing the
+            %b resistance 
+            by using a more conductive material or altering an electrical trace to have a wider trace.
+
+  %br
+  
+  %p.text.large
+    Consider the following resistive heater - the top of the mountain here is the point marked with 
+    %span.connection.red; 
+    the ocean is 
+    %span.connection.black .
+    And a the conductive trace acts like the river that connects them. 
+    The width of the river is a special property of the trace called 
+    %b Resistance
+    that is measured with a tool called a multimeter.

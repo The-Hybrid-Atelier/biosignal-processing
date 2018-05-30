@@ -1,0 +1,33 @@
+
+.ui.bottom.attached.tab.segment{"data-tab" => "probe"}
+  .full-container
+    %h1#reading 
+      79.7
+      %span#notime.farenheit &deg; F
+:css
+  .full-container{
+    width: 100%;
+    height: calc(100% - 50px);
+    display: flex;
+    flex-flow: nowrap column;
+    justify-content: center;
+    align-items: center;
+    overflow:hidden;
+  }
+  #reading{
+    position: relative;
+    font-size: 250pt;
+    font-family: "Avenir";
+    font-style: normal;
+    text-align: center;
+    padding-right: 100px;
+  }
+  #notime{
+    display: block;
+    position: absolute;
+    top: 0;
+    right: 0;
+    font-size: 60pt;
+    height: 100px;
+    line-height: 226px;
+  }

@@ -1,0 +1,380 @@
+:coffeescript
+  $ ->
+
+    window.ws = new WebStorage()
+    loadBackdrop()
+    window.colors = ["red", "orange", "yellow", "green", "teal", "blue", "purple", "brown"]
+    window.color_idx = 0
+    window.activeColor = "red"
+    window.activeSwatch = "red"
+    $("#add-swatch").click ()->
+      color = colors[color_idx]
+      swatch = $("<button>").addClass("button ui massive circular icon swatch " + color).data("color", color)
+      swatch.append($("<i>").addClass("ui icon"))
+      swatch.click ()->
+        window.activeColor = $(this).css('background-color')
+        window.activeSwatch = $(this).data("color")
+      $(swatch).insertBefore(this)
+      color_idx++
+      if color_idx == colors.length
+        $(this).addClass('disabled').unbind('click')
+    $("#add-swatch").click()
+    $('#save').click ()->
+      rasters = paper.project.getItems({class: "Raster"})[0].remove()
+      paper.view.update()
+      svg = paper.project.exportSVG
+        asString: true
+      b = new Blob [svg],{type:"application/svg+xml"}
+      saveAs b, "heaters.svg"
+
+    $("#accept-blobs").click ()->
+      $(this).addClass('loading')
+      _.defer classify
+      paper.s_tool.activate()
+
+
+
+  window.serpentine = ()->
+    console.log "SERPENTINE PROCESSING"
+    paper.project.layers["Heater_Layer"].activate()
+    raster = paper.project.getItems({class:"Raster"})[0]
+
+    
+
+    addressignBlob = new paper.Path.Rectangle
+      size: [350, 40]
+      position: raster.bounds.bottomCenter.clone()
+      fillColor: "orange"
+
+    groundBlob = new paper.Path.Rectangle
+      size: [80, 40]
+      position: addressignBlob.bounds.leftCenter.clone()
+      fillColor: "purple"
+    groundBlob = new paper.Path.Rectangle
+      size: [80, 40]
+      fillColor: "purple"
+      position: addressignBlob.bounds.rightCenter.clone()
+
+    hs = new HeatSketch()
+    blobs = paper.project.getItems 
+      heatBlob: true
+    _.each blobs, (blob)->
+      if not blob.inlet or not blob.outlet then return
+      console.log "MAIN PATH", blob.length, "INLET", blob.inlet.position, "OUTLET", blob.outlet.position
+      snake = HeatSketch.snake 
+        start: blob.inlet.position.clone()
+        end: blob.outlet.position.clone()
+        maze: [blob]
+        style: 
+          strokeColor: blob.heatColor
+      blob.inlet.bringToFront()
+      blob.outlet.bringToFront()
+      blob.heater = snake
+
+  window.classify = ()->
+    $canvas = $('canvas#markup')
+    contex = $canvas[0].getContext('2d')
+    paper.project.layers["Artwork_Layer"].visible = false
+
+    # CYCLE THROUGH EACH OF THE ACTIVE COLORS
+    imageData = _.map colors.splice(0, color_idx), (color)->
+      _.each paper.project.getItems({swatch: true}), (s)-> 
+        s.visible = (s.swatchColor == color)
+      paper.view.update()
+      imageData = contex.getImageData(0,0,$canvas.attr("width"),$canvas.attr("height"))
+      [color, imageData]
+    imageData = _.object imageData
+    paper.view.update()
+    paper.project.layers["Artwork_Layer"].visible = true
+    _.each paper.project.getItems({swatch: true}), (s)-> s.visible = false
+
+    paper.view.update()
+
+    classification = _.mapObject imageData, (image, color)->
+      # PROCESS BLOBS
+      blobLabels = FindBlobs(image)
+
+      j = 0
+      labels = {}
+      while j < blobLabels.length
+        row  = blobLabels[j]
+        i = 0
+        while i < row.length
+          if row[i] != 0
+            if not labels[row[i]]
+              labels[row[i]] = [[i, j]]
+            else
+              labels[row[i]].push [i, j]
+          i++
+        j++
+
+      # RETURN CONVEX HULL 
+      results = _.map labels, (set, id)->
+        [id, hull(set)]
+      return _.map results, (r)->
+        return new paper.Path
+          heatBlob: true
+          heatColor: color
+          strokeColor: color
+          strokeWidth: 5
+          # fillColor: color
+          segments: _.map r[1], (pt)-> paper.view.projectToView(new paper.Point({x: pt[0] * 0.5, y: pt[1] * 0.5}))
+      
+    $("#accept-blobs").removeClass('loading').unbind("click").click ()->
+      serpentine()
+    $("#accept-blobs i").removeClass('tasks').addClass("paint brush")
+
+    return classification
+  window.loadBackdrop = ()->
+    i = new Image()
+      
+    i.onload = ()->
+      # PAPER SETUP
+      scale = 1.2
+      $('canvas#markup, .canvas-container').attr
+        height: this.height * scale
+        width: this.width * scale
+      markup = $('canvas#markup')[0]
+      paper.install window
+      heatpaper = new paper.PaperScope()
+      heatpaper.setup(markup)
+      heatpaper.settings.handleSize = 10
+      
+      # LAYERS
+      artwork = new paper.Layer
+        name: "Artwork_Layer"
+      markup = new paper.Layer
+        name: "Markup_Layer"
+      markup.opacity = 0.5
+      heater = new paper.Layer
+        name: "Heater_Layer"
+      
+
+      artwork.activate()
+      raster = new paper.Raster
+        layer: artwork
+        source: ws.get(participant_id+"_segmented")
+        position: paper.view.center
+
+      hitSettings = 
+        fill: true
+        stroke: true
+        segments: false
+      paper.s_tool = new paper.Tool
+        activePath: null
+        tracePath: null
+        onMouseDown: (e)->
+          paper.project.layers["Heater_Layer"].activate()
+          hitResults = paper.project.hitTestAll e.point, hitSettings
+          hitResults = _.filter hitResults, (hit)->
+            return hit.item.pad
+          if hitResults.length > 0
+            console.log "MAKING TRACE PATH"
+            this.tracePath = new paper.Path
+              strokeColor: 'orange'
+              strokeWidth: 5
+              tracePath: true
+              segments: [e.point, e.point.clone()]
+            hitResults[0].item.traces.push(this.tracePath)
+          else
+            this.activePath = new paper.Path
+              strokeColor: 'purple'
+              strokeWidth: 5
+              segments: [e.point]
+        onMouseDrag: (e)->
+          if this.activePath
+            this.activePath.addSegment e.point
+          else 
+            this.tracePath.lastSegment.point = e.point
+        onMouseUp: (e)->
+          scope = this
+          if this.tracePath
+            this.tracePath.lastSegment.point = e.point
+            this.tracePath = null
+
+          if this.activePath
+            this.activePath.addSegment e.point
+            # PROCESSEING ON THE ACTIVE PATH
+            this.activePath.remove()
+            heatBlobs = paper.project.getItems
+              heatBlob: true
+
+            hits = _.map heatBlobs, (blob)->
+              r = 
+                blob: blob
+                hits: scope.activePath.getIntersections(blob)
+
+            hits = _.filter hits, (data)-> data.hits.length == 2
+            
+            _.each hits, (data)->
+              inPt = data.hits[0].point
+              outPt = data.hits[1].point
+              if data.blob.inlet
+                if data.blob.inlet.traces.length > 0
+                  data.blob.inlet.traces[0].firstSegment.point = inPt.clone()
+                
+                data.blob.inlet.remove()
+              if data.blob.outlet
+                if data.blob.outlet.traces.length > 0
+                  data.blob.outlet.traces[0].firstSegment.point = outPt.clone()
+                data.blob.outlet.remove()
+              if data.blob.heater
+                data.blob.heater.remove()
+
+              data.blob.inlet =  new paper.Path.Circle
+                fillColor: "purple"
+                radius: 15
+                position: inPt
+                pad: "inlet"
+                traces: []
+
+              data.blob.outlet =  new paper.Path.Circle
+                fillColor: "orange"
+                radius: 15
+                position: outPt
+                pad: "outlet"
+                traces: []
+          
+
+            
+
+
+          this.activePath = null
+      paper.b_tool = new paper.Tool
+        history: []
+        history_idx: 0
+        undo: ()->
+          _.each this.history[this.history_idx - 1], (c)->
+            c.remove()
+          this.history_idx =  this.history_idx - 1
+          this.history[this.history_idx] = []
+          if this.history_idx < 0
+            return false
+          else 
+            return true
+        onMouseDown: (e)->
+           this.history[this.history_idx] = []
+        onMouseDrag: (e)->   
+          markup.activate()
+          c = new paper.Path.Circle
+            radius: 20
+            fillColor: activeColor
+            position: e.point
+            swatchColor: activeSwatch
+            swatch: true
+          this.history[this.history_idx].push c
+        onMouseUp: (e)->
+          this.history_idx = this.history_idx + 1
+          $("#undo").removeClass('disabled')
+      paper.b_tool.activate()
+      $("#undo").click ()-> 
+        undoable = paper.b_tool.undo()
+        console.log "UNDO", undoable
+        if not undoable
+          $(this).addClass('disabled')
+        else
+          $(this).removeClass('disabled')
+      $("#undo").click()
+          
+    i.src = ws.get(participant_id+"_segmented")
+    dimensions = JSON.parse ws.get(participant_id+"_dimensions")
+
+
+
+
+.ui.bottom.attached.tab.segment.partial-container{"data-tab": "heatbrush"}
+  .heatbrush-container.full
+    .canvas-container
+      %canvas#markup{width: 500, height: 500}
+      #colorbar
+        %button.button.ui.massive.circular.icon.blue#add-swatch
+          %i.icon.add
+        
+      %button.button.ui.green.gigantic.circular.icon#accept-blobs
+        %i.icon.tasks
+      %button.button.ui.massive.circular.icon.blue#undo
+        %i.icon.undo
+      %button.button.ui.massive.circular.icon.blue#save
+        %i.icon.save
+    
+
+:scss
+  $eggshell: rgb(245, 244, 240);
+  .hidden{
+    display: none;
+  }
+  .heatbrush-container{
+    background: #333;
+    display: flex;
+    flex-flow: column no-wrap;
+    justify-content: center;
+    align-items: center;
+    margin: -14px;
+    .canvas-container{
+      position: relative;
+      background: #efefef;
+      padding: 30px;
+      -webkit-box-shadow: 10px 10px 33px -16px rgba(0,0,0,0.75);
+      -moz-box-shadow: 10px 10px 33px -16px rgba(0,0,0,0.75);
+      box-shadow: 10px 10px 33px -16px rgba(0,0,0,0.75);
+      #accept-blobs{
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+      }
+      #undo{
+        position: absolute;
+        bottom: 140px;
+        right: 10px;
+      }
+      #save{
+        position: absolute;
+        bottom: 10px;
+        right: 150px;
+      }
+      #colorbar{
+        position: absolute;
+        top: 0px;
+        left: -100px;
+        border: 1px solid black;
+        width: 80px;
+        height: 100%;
+        display: flex;
+        flex-flow: column nowrap;
+        align-items: center;
+        justify-content: flex-start;
+        background: $eggshell;
+        -webkit-box-shadow: 10px 10px 33px -16px rgba(0,0,0,0.75);
+        -moz-box-shadow: 10px 10px 33px -16px rgba(0,0,0,0.75);
+        box-shadow: 10px 10px 33px -16px rgba(0,0,0,0.75);
+        button{
+          margin: 5px;
+        }
+      }
+    }
+    canvas{
+    }
+
+    canvas#markup{
+      background: none;
+      # position: absolute;
+      top: 100px;
+      left: 100px;
+      z-index: 100;
+    }
+    
+  }
+
+  body, html{
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+  .partial-container{
+    # width: 100%;
+    height: 100%;
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+    # background: orange;
+    # overflow: hidden;
+  }

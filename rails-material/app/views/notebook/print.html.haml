@@ -1,0 +1,77 @@
+:coffeescript
+  $ ->
+    # $(".ui.page").dimmer('show')
+    # LOAD SAVED DIMENSIONS
+    if ws.includes(participant_id+"_dimensions")
+      dimensions = JSON.parse ws.get(participant_id+"_dimensions")
+      $('#dimensions').html(dimensions.name+" • "+dimensions.width+" "+dimensions.units+" x "+dimensions.height+" "+dimensions.units)
+    # LOAD SAVED IMAGE
+    if ws.includes(participant_id+"_segmented")
+      $('img#artwork').attr
+        src: ws.get(participant_id+"_segmented")
+    else
+      $('img#artwork').attr
+        src: "/missing.png"
+    # _.delay (()->$(".ui.page").dimmer('hide')), 1000
+= render partial: "steps"  
+#print-and-assemble.ui.grid.full
+  #input.column.seven.wide    
+    %h1.ui.dividing.header Instructions
+    .ui.divided.ordered.list.items
+      .item
+        .ui.image.small.segment.captioned
+          %img#artwork
+          .ui.bottom.attached.label#dimensions
+        .content
+          .header Header
+          .description 
+            Description of process
+          .extra
+            %button.button.ui.right.floated.primary
+              Button A
+            %a.button.ui.right.floated
+              Button B
+  #output.column.nine.wide 
+    .ui.image
+      %img.padded{src: "/test.png"}
+
+
+:scss
+  $eggshell: rgb(245, 244, 240);
+  #print-and-assemble{
+   /* Adjustment for iOS rendering*/
+    font-size: 0.8em;
+    /* Adjustment; steps is 66px tall */
+    margin: 0 66px 0 0; 
+  }
+
+
+  #input{
+    background: $eggshell;
+  }
+  #output{
+    background: #333;
+    /* Center vertically and horizontally */
+    display: flex;
+    flex-flow: column nowrap;
+    justify-content: center;
+    align-items: center;
+    /* Fill container */
+    width: 100%;
+    height: 100%;
+  }
+
+
+  img{
+    background: white;
+    &.bordered{
+      border: 1px solid #DDD !important;
+    }
+    &.padded{
+      border: 30px #DDD solid;
+    }
+
+  }
+  
+
+  

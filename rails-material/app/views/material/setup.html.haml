@@ -1,0 +1,305 @@
+:coffeescript
+  window.app = 
+    initialize: ()->
+      scope = this
+      @stream_service = null
+      @recording = null
+      scope = this
+
+      #IPEVO SERVICES
+      @ipevo = new Atelier("ipevo", "scanner")
+      @ipevo.addService "capture", (task, event)->
+        app.ipevo.send
+          to: task.from
+          service: "image"
+          data: app.snap(event)
+      @ipevo.addService "play_sound", (task, event)->
+        console.log "Playing Sound", task
+        if task.name
+          playSound(task.name)
+      @ipevo.addService "video_stream_start", (task, event)->
+        setInterval (()->
+          if not scope.stream_service
+            scope.stream_service = app.ipevo.send
+              to: task.from
+              service: "image"
+              data: app.snap(event)
+            ), 500
+      @ipevo.addService "video_stream_stop", (task)->
+        if scope.stream_service
+          clearInterval(scope.stream_service)
+          scope.stream_service = null
+
+      @ipevo.addService "video_record_start", (task)->
+        if not scope.recording
+          scope.record()
+          app.ipevo.send
+            to: "guide"
+            service: "status"
+            data: 
+              video: "recording"
+      
+      @ipevo.addService "video_record_stop", (task)->
+        if scope.recording
+          scope.stop_recording()
+          app.ipevo.send
+            to: "guide"
+            service: "status"
+            data: 
+              video: "stopped"
+
+
+      # ARDUINO SOCKET
+      try
+        @arduino = new WebSocket("ws://" + window.server_ip + ":3015")
+        @arduino.onopen = (event)->
+          console.log "ARDUINO OPEN"
+        @arduino.onerror = (event)->
+          console.error "ARDUINO ERROR"
+        @arduino.onerror = (event)->
+          console.log "ARDUINO CLOSED"
+        @arduino.onmessage = (event)->
+          # console.log event
+          msg = event.data.replace('\r\n', '')
+          parse = msg.split(":")
+          if parse.length != 2 then return
+          flag = parse[0]
+          msg = parse[1]
+          service = ""
+          switch flag
+            when "S"
+              service = "state_change"
+            when "T"
+              service = "temperature_read"
+            when "N"
+              service = "powered_on"
+
+          scope.ipevo.send
+            to: "guide"
+            from: "arduino"
+            service: service
+            data: msg 
+      catch err
+        alertify.error('Could not connect to the Arduino') 
+
+
+
+      # END ARDUINO SOCKET
+      @bindEvents()
+      @video = $('video')[0]
+      @scratch = $('#scratch')[0]
+      @ctx = $('#scratch')[0].getContext('2d')
+      @initLaunchControl()
+    initLaunchControl:  ()->
+      try
+        window.ctrl = new LaunchControl()
+        midi = new Atelier("midi", "scanner")
+        ctrl.open().then ->
+          ctrl.led 'all', 'amber'
+        .catch ()->
+          alertify.error('Could not connect to MIDI Controls. Try plugging the USB in and out.') 
+
+
+        ctrl.on 'message', (e) ->
+          midi.send
+            to: "guide"
+            service: e.dataType
+            data: 
+              track: e.track
+              value: e.value
+      catch err
+        alertify.error('Could not connect to MIDI Controls. Try plugging the USB in and out.') 
+
+    bindEvents: ()->
+      scope = this
+      @canvasInit()
+      $("#capture").click (e)->
+        scope.snap(e)
+            
+    canvasInit: ()->
+      scope = this
+      navigator.getUserMedia video: {
+            optional: [
+              {minWidth: 320}
+              {minWidth: 640}
+              {minWidth: 1024}
+              {minWidth: 1280}
+              {minWidth: 1920}
+              # {minWidth: 2560}
+            ]
+          }, (stream)->
+        video = $("video")[0]
+        scope.stream = stream
+        video.src = if url then url.createObjectURL(stream) else stream
+        $(video).on "loadeddata", ()->
+          $('#scratch').attr
+            width: video.videoWidth
+            height: video.videoHeight
+        $("video")[0].play()      
+      ,(err)->
+        console.log "ERROR", err 
+      url = window.URL or window.webkitURL
+    snap: (event)->
+      scope = this
+      @ctx.drawImage(@video, 0, 0, @scratch.width, @scratch.height)
+      b64jpeg = @scratch.toDataURL('image/jpg', 0, 0)
+      timestamp = parseInt(event.timeStamp)
+      @scratch.toBlob (blob)->
+        scope.saveFile(blob, "S:" + window.participant_id + "-" + timestamp + ".png", "img")
+        # saveAs(blob, )
+      return {image: b64jpeg, file: "snapshot-" + timestamp + ".png"}
+      
+    
+    record: ()->
+      scope = this
+      console.log "Recording"
+      @recording = 1
+      mediaRecorder = new MediaRecorder(@stream)
+      @recording = []
+      mediaRecorder.ondataavailable = (e) ->
+        scope.recording.push e.data  
+      mediaRecorder.onerror = (e) ->
+        console.log 'Error: ', e
+      mediaRecorder.onwarning = (e) ->
+        console.log 'Warning: ' + e
+      mediaRecorder.onstart = ->
+        console.log 'Started, state = ' + mediaRecorder.state
+      mediaRecorder.onstop = (event) ->
+        console.log 'Stopped, state = ' + mediaRecorder.state
+        blob = new Blob(scope.recording, type: 'video/webm')
+        scope.recording = null
+        timestamp = parseInt(event.timeStamp)
+        scope.saveFile(blob, "S:" + window.participant_id + "-" + timestamp+ ".webm", "webm")
+        
+      mediaRecorder.start()
+      @mediaRecorder = mediaRecorder
+    saveFile: (blob, fn, type)->
+      scope = this
+      # saveAs(blob, "video-" + timestamp)
+        
+      fd = window.objectToFormData
+        capture:
+          participant_id: parseInt(window.participant_id)
+          mime_type: type 
+          tags: fn
+      fileOfBlob = new File([blob], fn)
+      fd.append "capture[file]", fileOfBlob
+      request = 
+        type: 'POST'
+        url: '/captures.json'
+        data: fd
+        processData: false
+        contentType: false
+        success: (data)->
+          switch type
+            when "webm"
+              scope.ipevo.send
+              playSound(window.send_picture)
+                to: "guide"
+                service: "video"
+                data: 
+                  file: data.file.url
+            when "img"
+              playSound(window.send_picture) 
+              scope.ipevo.send
+                to: "guide"
+                service: "gallery"
+                data: 
+                  file: data.file.url
+            
+
+      $.ajax(request)
+    stop_recording: ()->
+      console.log "Stopped Recording"
+      @mediaRecorder.stop()
+  $ ->    
+    app.initialize()
+
+      
+
+
+#conversion      
+  %video
+#controls
+  %button.btn.btn-primary#capture
+    = glyph "camera"
+    CAPTURE
+%canvas#scratch
+
+
+
+- @sounds.each do |s|
+  %button.audio-btn{id: s.gsub(" ", "-"), file: s}
+    = s
+  
+:scss
+  #scratch{
+    display: none; 
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 100000;
+    border: 1px solid red;
+
+  }
+
+
+  html, body{
+    width: 100%; 
+    height: 100%;
+    overflow: hidden;
+    background: black;
+  }
+
+  #conversion{
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-flow: nowrap column;
+    justify-content: center;
+    align-items: center;
+    video{
+      width: auto;
+      height: auto;
+    }
+  }
+  #controls{
+    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    height: 100%;
+    display: flex;
+    flex-flow: wrap row;
+    justify-content: flex-start;
+    align-items: flex-start;
+    padding: 15px;
+  }
+  .canvas-container{
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 100;
+    canvas{
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+    #zoom{
+      position: absolute;
+      top: 15px;
+      right: 15px;
+    }
+  }
+  
+  
+
+ 
+ 
+
+
+  
+  

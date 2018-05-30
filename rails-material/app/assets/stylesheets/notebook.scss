@@ -1,0 +1,188 @@
+// Place all the styles related to the notebook controller here.
+// They will automatically be included in application.css.
+// You can use Sass (SCSS) here: http://sass-lang.com/
+// $font-url: "https://fonts.googleapis.com/css?family=Handlee|Roboto:400,700,700i";
+
+.light-blue{
+  background-color: #59a9e5!important;
+  color: #FFFFFF;
+  text-shadow: none;
+  background-image: none;
+}
+
+
+body, html{
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: black;
+  /*background-image: url("/thermopainting.png");*/
+  background-size: 300px auto;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.hidden{ display: none !important;}
+
+.ui.gigantic.buttons .button, .ui.gigantic.buttons .or, .ui.gigantic.button {
+    font-size: 3.714286rem;
+}
+
+.tc{
+    font-weight: bold;
+    display: inline;
+	color: #DB2828;
+ }
+.c{
+	font-weight: bold;
+	display: inline;
+	color: #2185D0;
+}
+.shadow{
+	-webkit-box-shadow: 10px 10px 33px -16px rgba(0,0,0,0.75);
+	-moz-box-shadow: 10px 10px 33px -16px rgba(0,0,0,0.75);
+	box-shadow: 10px 10px 33px -16px rgba(0,0,0,0.75);
+}
+img.watercolor{
+	background: #efefef;
+	padding: 15px;
+	@extend .shadow;
+	margin-bottom: 20px;
+}
+.large.text {
+   font-size: 1.5rem;
+}
+.celsius, .farenheit{
+	font-weight: bold;
+}
+.gallery.three .reference{
+	width: 33%;
+}
+.gallery.four .reference{
+	width: 25%;
+}
+.gallery{
+	width: 100%;
+	display: flex;
+	flex-flow: row nowrap;
+	align-items: center;
+	justify-content: center;
+	.reference{
+		display: flex;
+		flex-flow: column nowrap;
+		align-items: center;
+		justify-content: center;
+		&.large{
+			img{
+				height: 200px;
+			}
+		}
+		img{
+			height: 150px;
+			padding: 5px;
+
+		}
+
+		.caption{
+			text-align: center;
+			width: 100%;
+		}
+	}
+}
+h1{
+	font-family: "Adobe Caslon Pro";
+	font-style: italic;
+}
+.audio-btn{
+    display: none;
+  }
+  .connection{
+    position: relative;
+    &:before{
+      content: " ";
+      display: inline-block;
+      width: 15px;
+      position: relative;
+      top: 0px;
+      height: 15px;
+      border-radius: 30px;
+      margin-right: 3px;
+    }
+    &.red:before{
+      background: desaturate(red, 40%);
+    }
+    &.black:before{
+      background: #333;
+    }
+    &.yellow:before{
+      background: desaturate(yellow, 20%);
+    }
+  }
+  @keyframes cf3FadeInOut {
+      0% {opacity:1;}
+      45% {opacity:1;}
+      55% {opacity:0;}
+      100% {opacity:0;}
+  }
+  .full{
+    width: 100%;
+    height: 100%;
+  }
+  .tp-note{
+      font-family: 'Handlee', cursive;
+  }
+  .tp{
+      font-family: 'Roboto', serif;
+  }
+  h2{
+    margin-left: 70px;
+  }
+  .thermonumber{
+      pointer: cursor;
+      height: 80px;
+      width: 40px;
+      position: relative;
+      margin: 0 15px;
+      float: left;
+      img {
+        position:absolute;
+        left:0;
+        -webkit-transition: opacity 0.5s ease-in-out;
+        -moz-transition: opacity 0.5s ease-in-out;
+        -o-transition: opacity 0.5s ease-in-out;
+        transition: opacity 0.5s ease-in-out;
+        width: 100%;
+      }
+      /*
+      img.top {
+          animation-name: cf3FadeInOut;
+          animation-timing-function: ease-in-out;
+          animation-iteration-count: infinite;
+          animation-duration: 3s;
+          animation-direction: alternate;
+      }
+      */
+      img.top:hover {opacity:0;}
+  }
+  .thermopainting{
+      pointer: cursor;
+      position: relative;
+
+      .heat, .cool {
+        position:absolute;
+        left:0;
+      }
+      img{
+        width: 100%;
+        padding: 0 !important;
+      }
+      .heat{display: none;}
+  }
+
+
+  .captioned{
+    padding-right: 0px !important;
+    img{
+      margin-bottom: 1em !important;
+    }
+  }

@@ -1,0 +1,129 @@
+:coffeescript
+  window.app = 
+    initialize: ()->
+
+      @stream_service = null
+      @recording = null
+      scope = this
+      @ipevo = new Atelier("ipevo", "scanner")
+      
+
+    
+    canvasInit: ()->
+      scope = this
+      navigator.getUserMedia video: {
+            optional: [
+              {minWidth: 320}
+              {minWidth: 640}
+              {minWidth: 1024}
+              # {minWidth: 1280}
+              # {minWidth: 1920}
+              # {minWidth: 2560}
+            ]
+          }, (stream)->
+        scope.stream = stream
+        video = $("video")[0]
+        video.src = if url then url.createObjectURL(stream) else stream
+        $(video).on "loadeddata", ()->
+          $('#scratch').attr
+            width: video.videoWidth
+            height: video.videoHeight
+        $("video")[0].play()      
+      ,(err)->
+        console.log "ERROR", err 
+      url = window.URL or window.webkitURL
+    snap: ()->
+      @ctx.drawImage(@video, 0, 0, @scratch.width, @scratch.height)
+      b64jpeg = @scratch.toDataURL('image/jpg', 0, 0)
+      return b64jpeg
+      
+    
+ 
+  $ ->    
+    app.initialize()
+
+      
+
+
+#conversion      
+  %video
+#controls
+  %button.btn.btn-primary#capture
+    = glyph "camera"
+    CAPTURE
+%canvas#scratch
+
+
+
+  
+:scss
+  #scratch{
+    display: none; 
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 100000;
+    border: 1px solid red;
+
+  }
+
+
+  html, body{
+    width: 100%; 
+    height: 100%;
+    overflow: hidden;
+    background: black;
+  }
+
+  #conversion{
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-flow: nowrap column;
+    justify-content: center;
+    align-items: center;
+    video{
+      width: auto;
+      height: auto;
+    }
+  }
+  #controls{
+    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    height: 100%;
+    display: flex;
+    flex-flow: wrap row;
+    justify-content: flex-start;
+    align-items: flex-start;
+    padding: 15px;
+  }
+  .canvas-container{
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 100;
+    canvas{
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+    #zoom{
+      position: absolute;
+      top: 15px;
+      right: 15px;
+    }
+  }
+  
+  
+
+ 
+ 
+
+
+  
+  

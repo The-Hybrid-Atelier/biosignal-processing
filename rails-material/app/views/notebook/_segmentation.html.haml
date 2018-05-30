@@ -1,0 +1,475 @@
+:coffeescript
+  window.hd = angular.module('heatDesign', [])
+    .controller 'ArtworkController', ()->
+      if ws.includes(participant_id+"_dimensions")
+        dimensions = JSON.parse ws.get(participant_id+"_dimensions")
+      else
+        dimensions = 
+          name: ""
+          width: 4
+          height: 4
+          units: "in"
+      @width = dimensions.width
+      @height = dimensions.height
+      @units = dimensions.units
+      @name = dimensions.name
+      
+  $ ->
+    $(".ui.page").dimmer('show')
+    alertify.set('notifier','position', 'bottom-right');
+    updateCanvas()
+    initSegmenter()
+    bindEvents()
+    artwork = $('canvas#artwork')
+    artwork.attr
+      name: ""
+      width: artwork.width()
+      height: artwork.height()
+
+    # LOAD SAVED DIMENSIONS
+    if ws.includes(participant_id+"_dimensions")
+      dimensions = JSON.parse ws.get(participant_id+"_dimensions")
+    else
+      dimensions = 
+        name: ""
+        width: 4
+        height: 4
+        units: "in"
+    
+
+    # LOAD SAVED IMAGE
+    if ws.includes(participant_id+"_segmented")
+      $('img#saved-artwork').attr
+        src: ws.get(participant_id+"_segmented")
+      .click ()->
+        i = new Image()
+        i.onload = ()->
+          output_canvas = $('canvas#artwork').get(0)
+          output_ctx = output_canvas.getContext('2d')
+          output_ctx.drawImage(this, 0, 0, $(output_canvas).attr('width'), $(output_canvas).attr('height'))
+          $("#capture").removeClass("loading")
+
+        i.src = $(this).attr('src')
+        segmenter.lastImage = i
+      
+      $('#dimensions').html dimensions.name+" • "+dimensions.width+" "+dimensions.units+" x "+dimensions.height+" "+dimensions.units  
+    else
+      $('img#saved-artwork').attr
+        src: "/missing.png"
+      $('#load-previous').addClass('hidden')
+      $('#capture-artwork').removeClass('hidden')
+
+    _.delay (()->$(".ui.page").dimmer('hide')), 1000
+
+  
+    
+  window.getPoints = ()->
+    pts = _.map window.segmenter.homography.segments, (s)-> return s.point
+    pts = [pts[1], pts[2], pts[3], pts[0]]
+    pts = _.map pts, (pt)-> {x: pt.x, y: pt.y}
+    
+  initSegmenter = ()->
+    window.segmenter = new Atelier("segmentation", "scanner")
+    scope = segmenter
+    segmenter.hp = []
+
+
+    writeup = $('canvas#writeup')[0]
+    paper.setup(writeup)
+
+    segmenter.homography = new paper.Path.Rectangle
+      size: [150, 150]
+      fillColor: "white"
+      opacity: 0.4
+      position: paper.view.center
+
+    r = segmenter.homography
+
+    _.each r.segments, (corner)->
+      dir = corner.point.clone().subtract(r.bounds.center)
+      dir.length = 10
+      controls = new paper.Path.Circle
+        radius: 15
+        fillColor: "#00A8E1"
+        position: corner.point.clone().add(dir)
+        corner: corner
+        onMouseDown: (e)->
+          playSound(window.tap)
+        onMouseDrag: (e)->
+          @translate(e.delta)
+          @corner.point = @position.clone()
+        onMouseUp: (e)->
+          segmenter.hp = getPoints()
+          segmenter.rectification_routine()
+
+    
+    segmenter.reset = ()->
+      this.hp = []
+    segmenter.rectification_routine = ()->
+      @w = $('canvas#ippevo').width()
+      @h = $('canvas#ippevo').height()
+      # http://www.cse.psu.edu/~rtc12/CSE486/lecture16.pdf
+      # https://math.stackexchange.com/questions/494238/how-to-compute-homography-matrix-h-from-corresponding-points-2d-2d-planar-homog
+
+      # PROMPT FOUR POINTS
+      # bias = 1.5
+      s = {1:@hp[0], 2:@hp[1], 3:@hp[2], 4:@hp[3]}
+      d = {1:{x:0, y:0}, 2:{x:@w, y:0}, 3:{x:@w, y:@h}, 4:{x:0, y:@h}}
+      console.log "s", s, "d", d
+      # SETUP SYSTEM OF EQUATIONS
+      A = [ 
+        [s[1].x, s[1].y, 1, 0, 0, 0, -1 * s[1].x * d[1].x, -1 * s[1].y * d[1].x]
+        [0, 0, 0, s[1].x, s[1].y, 1, -1 * s[1].x * d[1].y, -1 * s[1].y * d[1].y]
+        [s[2].x, s[2].y, 1, 0, 0, 0, -1 * s[2].x * d[2].x, -1 * s[2].y * d[2].x]
+        [0, 0, 0, s[2].x, s[2].y, 1, -1 * s[2].x * d[2].y, -1 * s[2].y * d[2].y]
+        [s[3].x, s[3].y, 1, 0, 0, 0, -1 * s[3].x * d[3].x, -1 * s[3].y * d[3].x]
+        [0, 0, 0, s[3].x, s[3].y, 1, -1 * s[3].x * d[3].y, -1 * s[3].y * d[3].y]
+        [s[4].x, s[4].y, 1, 0, 0, 0, -1 * s[4].x * d[4].x, -1 * s[4].y * d[4].x]
+        [0, 0, 0, s[4].x, s[4].y, 1, -1 * s[4].x * d[4].y, -1 * s[4].y * d[4].y]
+      ]
+      b = [
+        [d[1].x]
+        [d[1].y]
+        [d[2].x]
+        [d[2].y]
+        [d[3].x]
+        [d[3].y]
+        [d[4].x]
+        [d[4].y]
+      ] 
+      # SOLVE AND REARRANGE HOMOGRAPHY
+      h = numeric.solve(A, b)
+      H = [
+        [h[0], h[1], h[2]]
+        [h[3], h[4], h[5]] 
+        [h[6], h[7], 1]
+      ]
+      homography_transform = [H[0][0], H[1][0], H[0][1], H[1][1], H[0][2], H[1][2]]
+      
+      # APPLY TRANSFORM
+      input_canvas = $('canvas#ippevo').get(0)
+      input_ctx = input_canvas.getContext('2d')
+      output_canvas = $('canvas#artwork').get(0)
+      output_ctx = output_canvas.getContext('2d')
+
+      input_ctx.setTransform.apply(input_ctx, homography_transform)      
+      $(this.lastImage).trigger('load') # if ws then ws.set "homography", JSON.stringify h_arr
+
+      output_ctx.drawImage($('canvas#ippevo')[0], 0, 0,  $(input_canvas).attr('width'), $(input_canvas).attr('height'), 0, 0, $(output_canvas).attr('width'), $(output_canvas).attr('height'));
+      # debugger;
+      input_ctx.resetTransform()
+      $(this.lastImage).trigger('load') 
+
+
+  bindEvents = ()->
+    scope = segmenter
+    $('#rotate').click ()->
+      output_canvas = $('canvas#artwork').get(0)
+      output_ctx = output_canvas.getContext('2d')
+      
+
+      #CLEAR CANVAS
+      output_ctx.clearRect(0, 0, output_canvas.width, output_canvas.height)
+  
+      # Move registration point to the center of the canvas
+      output_ctx.translate(output_canvas.width/2, output_canvas.height/2);
+      output_ctx.rotate(Math.PI / 2);
+    
+      # Move registration point back to the top left corner of canvas
+      output_ctx.translate(-1 * output_canvas.width/2, -1 * output_canvas.height/2);
+      segmenter.rectification_routine()
+
+
+    segmenter.addService "image", (task)->
+      imageHandler(task)
+    $('#capture-new').click ()->
+      $('#load-previous').hide()
+      $('#capture-artwork').removeClass('hidden')
+
+    $('#extract').click ()->
+      segmenter.hp = getPoints()
+      segmenter.rectification_routine()
+    # $('canvas').click fourCornersHandler
+    $('#save-metadata').click ()->
+      dimensions = 
+        name: $('#name.dimension').val()
+        width: $('#width.dimension').val()
+        height: $('#height.dimension').val()
+        units: $('select#units').val()
+      ws.set(window.participant_id + "_" + "dimensions", JSON.stringify(dimensions))
+      alertify.success "Artwork metadata has been set!"
+      $(this).addClass("green").removeClass("primary")
+      check = $("<i>").addClass "ui icon check"
+      $(this).children("i").remove()
+      $(this).prepend check
+
+
+    $('#finalize').click ()->
+      data = $('canvas#artwork')[0].toDataURL('image/png')
+      ws.set(window.participant_id + "_" + "segmented", data)
+      # $('#save-metadata').click()
+      alertify.success "Artwork has been saved!"
+      
+      $(this).addClass("green").removeClass("primary")
+      check = $("<i>").addClass "ui icon check"
+      $(this).children("i").remove()
+      $(this).prepend check
+      $("#goto-joule").removeClass("hidden")
+
+    $(".capture").click ()->
+      segmenter.send
+        to: "ipevo"
+        service: "capture"
+      $(this).addClass("loading")
+      playSound(window.take_picture)
+
+
+    $('.dimension').on 'input', ()->
+      updateCanvas()
+  
+  imageHandler = (task)->
+    i = new Image()
+    i.onload = ()->
+      ctx = $('canvas')[0].getContext('2d')
+      ctx.drawImage(this, 0, 0, $('canvas').attr('width'), $('canvas').attr('height'))
+      $(".capture").removeClass("loading")
+    i.src = task.data.image 
+    segmenter.lastImage = i
+    $('#extractor').removeClass('hidden')
+    $('#captor').addClass('hidden')
+
+  updateCanvas = ()->
+    h = $('#height.dimension').val()
+    w = $('#width.dimension').val()
+    units = $('select#units').val()
+    console.log "w x h", w, h
+    max_w = 384
+
+    if h == 0 or w == 0 then return
+    aspect = h/w
+
+    if aspect < 1
+      $('#artwork').attr
+        height: (max_w * aspect)
+        width: (max_w)
+      .css
+        height: (max_w * aspect)
+        width: (max_w)
+    else
+      $('#artwork').attr
+        width: (max_w / aspect)
+        height: (max_w)
+      .css 
+        width: (max_w / aspect)
+        height: (max_w) 
+
+#capture-view.ui.grid.full{"ng-app": 'heatDesign', "ng-controller": "ArtworkController as artwork"}
+  #input.column.seven.wide
+    #source
+      
+        
+    #instructions
+      %h1.ui.dividing.header Instructions
+      #load-previous.ui.divided.ordered.list.items
+        .item#saved-metadata
+          .ui.image.small.segment.captioned
+            %img#saved-artwork
+            .ui.bottom.attached.label#dimensions
+          .content.bottom.aligned
+            .header Use previously captured image?
+            .description 
+              Make sure to place within the outlined bounds.
+            .extra
+              %button.button.ui.right.floated.primary#capture-new
+                Capture new
+              %a.button.ui.right.floated{href: notebook_joule_path}
+                Use previous
+      #capture-artwork.hidden.ui.divided.ordered.list.items
+        .item
+          .content.bottom.aligned
+            .header Name and specify the dimensions of your artwork
+            .description 
+              %form.ui.form
+                .field
+                  %label Name
+                  %input.ui.input.dimension#name{"ng-model": "artwork.name"}
+            
+                .three.fields
+                  .field
+                    %label Width
+                    %input#width.ui.input.dimension{"ng-model": "artwork.width"}
+                  .field
+                    %label Height
+                    %input#height.ui.input.dimension{"ng-model": "artwork.height"}
+                  .field
+                    %label Units
+                    %select#units.ui.fluid.dropdown.dimension{"ng-model": "artwork.units"}
+                      %option{value: "in"} Inches
+                      %option{value: "mm"} Millimeters
+            .extra
+              %button.button.ui.fluid.primary.floated.icon#save-metadata{"data-loading-text": "Loading..."}
+                SET
+        .item#captor
+          .image
+            = image_tag "/ipevo.jpg"
+          .content.bottom.aligned
+            .header.lh Place your artwork under the Ippevo camera.
+            .description 
+              Make sure to place within the outlined bounds.
+            .extra
+              %button.button.ui.fluid.icon.capture{"data-loading-text": "Loading..."}
+                %i.icon.camera
+                CAPTURE
+        
+        .item#extractor.hidden
+          .content.bottom.aligned
+            .header.lh Extract your artwork from the image. 
+            .description 
+              Move the blue circles until you are satisfied with the captured image.
+              %br
+              %br
+              .canvas-container{width: 384, height: 228}
+                %canvas#ippevo{width: 384, height: 228}
+                %canvas#writeup{width: 384, height: 228}
+            .extra
+              
+              .ui.buttons.right.floated
+                %button.button.ui.circular.icon#rotate
+                  %i.icon.undo
+                %button.button.ui.circular.icon.capture{"data-loading-text": "Loading..."}
+                  %i.icon.camera
+                %button.button.ui.primary.circular.icon#finalize{"data-loading-text": "Loading..."}
+                  %i.icon.check
+              %br
+        .item#goto-joule.hidden
+          .content
+            .extra
+              .ui.buttons.right.floated
+                %a#goto-joule.button.ui.labeled.right.blue.circular.icon{href: notebook_joule_path}
+                  %i.icon.chevron.right
+                  GENERATE CIRCUIT
+                  
+
+      
+      
+    
+    
+  #output.column.nine.wide 
+    .canvas-container
+      %canvas#artwork
+      .dimension.name
+        {{artwork.name}}
+      .dimension.height
+        %span.mag {{artwork.height}}
+        %span.units {{artwork.units}}
+      .dimension.width
+        %span.mag {{artwork.width}}
+        %span.units {{artwork.units}}
+
+:scss
+  $eggshell: rgb(245, 244, 240);
+  .partial-container{
+    # width: 100%;
+    height: 100%;
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+    # background: orange;
+    # overflow: hidden;
+  }
+  .saved{
+      /*display: flex;
+      flex-flow: column nowrap;
+      justify-content: flex-start;
+      align-items: center;*/
+      img{
+        max-width: 300px;
+        max-height: 300px;
+        background: #efefef;
+        padding: 15px;
+        -webkit-box-shadow: 10px 10px 33px -16px rgba(0,0,0,0.75);
+        -moz-box-shadow: 10px 10px 33px -16px rgba(0,0,0,0.75);
+        box-shadow: 10px 10px 33px -16px rgba(0,0,0,0.75);
+      }
+  }
+
+  .canvas-container{
+    position: relative;
+  }
+
+  #input{
+    background: $eggshell;
+    .canvas-container{
+      button{
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 1000;
+      }
+      background: desaturate(darken($eggshell, 20%), 10%);
+    }
+    margin-bottom: 20px;
+    border-radius: 5px;
+  }
+
+  #output{
+    background: #333;
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    button{
+      position: absolute;
+      z-index: 1000;
+      bottom: 120px;
+      right: 40px;
+    }
+    .dimension{
+      line-height: 1.1em;
+      position: absolute;
+      color: white;
+      width: 100%;
+      height: 30px;
+      font-size: 3em;
+      text-align: center;
+      &.name{
+        top: -40px;
+        bottom: auto;
+        font-style: italic;
+      }
+      &.height{
+        transform: rotate(-90deg); 
+        right: calc(-50% - 25px);
+        top: calc(50% - 17px);
+      }
+      &.width{
+        bottom: -35px;
+        left: 0;
+      }
+    }
+    #artwork{
+      background: #efefef;
+      background-image: url("/missing.png");
+      background-size: contain;
+      # padding: 100px;
+      -webkit-box-shadow: 10px 10px 33px -16px rgba(0,0,0,0.75);
+      -moz-box-shadow: 10px 10px 33px -16px rgba(0,0,0,0.75);
+      box-shadow: 10px 10px 33px -16px rgba(0,0,0,0.75);
+      &.square{
+        width: 400px;
+        height: 400px;
+      }
+      &.four-three{
+        width: 600px;
+        height: 450px;
+      }
+
+    }
+  }
+
+  canvas#writeup{
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 100;
+  }

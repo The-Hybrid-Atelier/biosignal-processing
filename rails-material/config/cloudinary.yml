@@ -1,0 +1,19 @@
+---
+development:
+  cloud_name: cearto
+  api_key: '868238596176964'
+  api_secret: pz3d8NMHK4aEPjfTp4koE5WId0o
+  enhance_image_tag: true
+  static_image_support: false
+production:
+  cloud_name: cearto
+  api_key: '868238596176964'
+  api_secret: pz3d8NMHK4aEPjfTp4koE5WId0o
+  enhance_image_tag: true
+  static_image_support: true
+test:
+  cloud_name: cearto
+  api_key: '868238596176964'
+  api_secret: pz3d8NMHK4aEPjfTp4koE5WId0o
+  enhance_image_tag: true
+  static_image_support: false

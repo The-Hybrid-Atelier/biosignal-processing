@@ -1,0 +1,72 @@
+.ui.bottom.attached.tab.segment{"data-tab" => "tools-and-materials"}
+  %h1.ui.header Tools &amp; Materials
+  .ui.link.four.cards
+    .card
+      .image
+        .thermopainting
+          .cool
+            = image_tag "/guide/examples/developed/colorwheel-cool.png", class: ""
+          .heat
+            = image_tag "/guide/examples/developed/colorwheel-hot.png", class: ""    
+      .ui.buttons
+        %button.ui.button.cool.blue
+          %i.icon.snowflake
+          COOL
+        .or
+        %button.ui.button.heat
+          %i.icon.fire
+          HEAT
+      .content
+        .header Thermochromic Watercolors
+        .description
+          Transition to clear at
+          %span.farenheit
+          92&deg;F.
+        %span.celsius
+          33&deg;C.
+    .card
+      .image
+        %img{src: "/guide/peltier.png"}
+      .content
+        .header Peltier Element
+        .meta
+          %a Heating, Cooling
+        .description
+          A peliter element is a thermoelectric component. 
+          %p
+            It has two connections 
+            %span.connection.red (positive) 
+            and 
+            %span.connection.black
+            (negative) that can 
+            %b heat up 
+            or 
+            %b cool down
+            , depending on how you connect it. 
+    .card
+      .image
+        %img{src: "/guide/plate-annotated.png"}
+      .content
+        .header Hot/Cold Plate
+        .meta
+          %a Heating, Cooling
+        .description
+          A peliter element is sandwiched between an aluminum plate and a heat sink, allow for a larger area to heat up/cool down. The plate has a special audio jack connector that carries power (
+          %span.connection.red,
+          %span.connection.black
+          ) and a special connection for detecting 
+          %span.connection.yellow
+          touch. 
+    .card
+      .image
+        %img{src: "/guide/printer.png"}
+      .content
+        .header Silver Ink Resistive Heaters
+        .meta
+          %a Heating
+        .description
+          A special inkjet printer is used to print designs with conductive silver ink on a special film of plastic called PET. We can use this to make silver ink heaters. When we connect power magnets to the
+          %span.connection.red positive
+          and 
+          %span.connection.black negative sides, 
+          we can activate the heater.

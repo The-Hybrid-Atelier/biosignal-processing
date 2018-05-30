@@ -1,0 +1,20 @@
+= render partial: "steps"  
+= render partial: "segmentation"  
+
+
+:scss  
+  #capture-view{
+    /* Adjustment for iOS rendering*/
+    font-size: 0.8em;
+    /* Adjustment; steps is 66px tall */
+    margin: 0 66px 0 0; 
+  }
+  .lh{
+      line-height: 1.4em !important;
+    }
+  #input{
+    overflow-x: hidden;
+    overflow-y: scroll;
+  }
+
+  

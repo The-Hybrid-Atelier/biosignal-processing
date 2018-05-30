@@ -1,0 +1,143 @@
+:coffeescript
+  $ ->
+    $('.menu .item').tab()
+    units = "imperial"
+
+    switch units
+      when "imperial"
+        $('.celsius').hide()
+      when "metric"
+        $('.farenheit').hide()
+    $('button.heat').click ()->
+      $(this).parents(".card").find('.thermopainting .heat').fadeIn(2000)
+      $(this).addClass('red').siblings("button").removeClass('blue')
+      playSound(window.heat)
+
+    $('button.cool').click ()->
+      $(this).parents(".card").find('.thermopainting .heat').fadeOut(2000)
+      $(this).addClass('blue').siblings("button").removeClass('red')
+      playSound(window.cool)
+
+
+    $('.menu .item').click ()->
+      _.each $('.thermopainting'), (tp)->
+        w = $(tp).parents(".card").width()
+        $(tp).width(w)
+        $(tp).height($(tp).find('img').height())
+    
+.ui.top.attached.tabular.menu
+  %a.item.active{"data-tab" => "intro"} Intro
+  %a.item{"data-tab" => "theory"} Theory
+  %a.item{"data-tab" => "tools-and-materials"} Tools &amp; Materials
+  %a.item{"data-tab" => "techniques"} Techniques
+  %a.item{"data-tab" => "motifs"} Motifs
+  %a.item{"data-tab" => "camera"} Camera
+  %a.item{"data-tab" => "video"} Video
+  %a.item{"data-tab" => "probe"} Probe
+= render partial: "intro"  
+= render partial: "tools_materials"  
+= render partial: "techniques"  
+= render partial: "motifs"  
+= render partial: "camera"  
+= render partial: "video"  
+= render partial: "theory"  
+= render partial: "probe"  
+
+- @sounds.each do |s|
+  %button.audio-btn{id: s.gsub(" ", "-"), file: s}
+    = s
+:scss
+  body{
+    overflow: hidden;
+  }
+  .tab{
+    height: 100%;
+    overflow: scroll; 
+    padding-bottom: 100px !important;
+  }
+  .audio-btn{
+    display: none;
+  }
+  .connection{
+    position: relative;
+    &:before{
+      content: " ";
+      display: inline-block;
+      width: 15px;
+      position: relative;
+      top: 0px;
+      height: 15px;
+      border-radius: 30px;
+      margin-right: 3px;
+    }
+    &.red:before{
+      background: desaturate(red, 40%);
+    }
+    &.black:before{
+      background: #333;
+    }
+    &.yellow:before{
+      background: desaturate(yellow, 20%);
+    }
+  }
+  @keyframes cf3FadeInOut {
+      0% {opacity:1;}
+      45% {opacity:1;}
+      55% {opacity:0;}
+      100% {opacity:0;}
+  }
+  .content{
+    margin-left: 30px;
+  }
+  .tp-note{
+      font-family: 'Handlee', cursive;
+  }
+  .tp{
+      font-family: 'Roboto', serif;
+  }
+  h2{
+    margin-left: 70px;
+  }
+  .thermonumber{
+      pointer: cursor;
+      height: 80px;
+      width: 40px;
+      position: relative;
+      margin: 0 15px;
+      float: left;
+      img {
+        position:absolute;
+        left:0;
+        -webkit-transition: opacity 0.5s ease-in-out;
+        -moz-transition: opacity 0.5s ease-in-out;
+        -o-transition: opacity 0.5s ease-in-out;
+        transition: opacity 0.5s ease-in-out;
+        width: 100%;
+      }
+      /*
+      img.top {
+          animation-name: cf3FadeInOut;
+          animation-timing-function: ease-in-out;
+          animation-iteration-count: infinite;
+          animation-duration: 3s;
+          animation-direction: alternate;
+      }
+      */
+      img.top:hover {opacity:0;}
+  }
+  .thermopainting{
+      pointer: cursor;
+      position: relative;
+
+      .heat, .cool {
+        position:absolute;
+        left:0;
+      }
+      img{
+        width: 100%;
+        padding: 0 !important;
+      }
+      .heat{display: none;}
+  }
+  
+

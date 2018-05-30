@@ -1,0 +1,52 @@
+:coffeescript
+
+	$ ->
+		host = window.server_ip
+		defaultImage = "/potato.jpg"
+		port = "8888"
+		# socket = "echo"
+		socket = "scanner"
+
+
+		i = new Image()
+		i.onload = ()->
+			ctx = $('canvas')[0].getContext('2d')
+			ctx.drawImage(this, 0, 0, $('canvas').attr('width'), $('canvas').attr('height'))
+		i.src = defaultImage
+
+		address = "ws://"+host+":"+port+"/"+socket
+		console.log "WEBSOCKET TESTER", address
+		
+		window.atl = new Atelier("tester", "scanner")
+		atl.bind "ipevo", (event, data)->
+			i = new Image()
+			i.onload = ()->
+				console.log "LOADING"
+				ctx = $('canvas')[1].getContext('2d')
+				ctx.drawImage(this, 0, 0, $('canvas').attr('width'), $('canvas').attr('height'))
+			i.src = data.response
+		
+		# $('#sender').click ()->
+		# 	# value = $("#sendText").val()
+		# 	b64jpeg = $('canvas')[0].toDataURL("image/jpeg", 1.0)
+		# 	console.log "SENT"
+		# 	thermoSocket.send(b64jpeg)
+			
+
+
+.track
+	%button#thermocamera.btn.btn-primary THERM
+	%canvas{width: 300, height: 200}
+	%button#sender.btn.btn-primary Send
+	%canvas.response{width: 300, height: 200}
+
+:css
+	.track{
+		display: flex: 
+		flex-flow: nowrap row;
+		justify-content: center;
+		align-items: flex-start;
+	}
+	.response{
+		border: 1px solid red;
+	}

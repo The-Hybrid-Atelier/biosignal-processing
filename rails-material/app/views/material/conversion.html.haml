@@ -1,0 +1,229 @@
+:coffeescript
+  window.app = 
+    initialize: ()->
+      @ipevo = new Atelier("ipevo", "scanner")
+      @ipevo.addService "capture", (task)->
+        app.ipevo.send
+          to: task.from
+          service: "image"
+          data: app.snap()
+
+      @bindEvents()
+      @video = $('video')[0]
+      @scratch = $('#scratch')[0]
+      @ctx = $('#scratch')[0].getContext('2d')
+
+    bindEvents: ()->
+      scope = this
+      @paperLoad()
+      @canvasInit()
+      $("#capture").click ()->
+        scope.snap()
+      $('#threshold').on "input change", ()->
+        scope.threshold($(this).val())
+            
+    paperLoad: ()->
+      paper = window.Utility.paperSetup("vision")
+      paper.settings.handleSize = 8 
+      c = new paper.Path.Circle
+        radius: 10
+        fillColor: 'red'
+        position: paper.view.center
+    canvasInit: ()->
+      navigator.getUserMedia video: {
+            optional: [
+              {minWidth: 320}
+              {minWidth: 640}
+              {minWidth: 1024}
+              {minWidth: 1280}
+              {minWidth: 1920}
+              # {minWidth: 2560}
+            ]
+          }, (stream)->
+        video = $("video")[0]
+        video.src = if url then url.createObjectURL(stream) else stream
+        $(video).on "loadeddata", ()->
+          $('#scratch').attr
+            width: video.videoWidth
+            height: video.videoHeight
+          # setInterval (()-> $("#capture").click()), 1000
+        $("video")[0].play()      
+      ,(err)->
+        console.log "ERROR", err 
+      url = window.URL or window.webkitURL
+    snap: ()->
+      @ctx.drawImage(@video, 0, 0, @scratch.width, @scratch.height)
+      b64jpeg = @scratch.toDataURL('image/jpg', 0, 0)
+      return b64jpeg
+      
+      
+      _.each paper.project.getItems({class: "Raster"}), (raster)->
+        raster.remove()
+
+      paper.design = new Raster
+          source: @scratch.toDataURL('image/jpg', 0, 0)
+          position: paper.view.center
+          onLoad: ()->
+            # paper.design.rotate(10);
+            paper.design.fitBounds(paper.view.bounds)
+      @dataCopy = null
+    threshold: (val)->
+      $(@video).fadeOut()
+      if not @dataCopy
+        @dataCopy = new Uint8ClampedArray(paper.design.getImageData().data)
+
+      imageData = paper.design.getImageData()
+      imageData.data.set(@dataCopy)
+
+      data = imageData.data;
+      i = 0
+      while i < data.length
+        arr = [data[i], data[i+1], data[i+2]]
+        avg = numeric.sum(arr)/3
+        dev = numeric.sub(arr, avg)
+        dev = numeric.pow(dev, 2)
+        variance = numeric.sum(dev)/3
+        # if i == 0 
+          # console.log brightness
+        if variance > val
+          data[i + 3] =  255
+        else
+          data[i + 3] =  1
+        i += 4
+      paper.design.setImageData(imageData, new paper.Point(0, 0))
+      
+      
+  window.playSound = (name)->
+    $("#" + name).mousedown()
+    _.delay (()-> $("#" + name).mouseup()), 400
+      
+  $ ->    
+    app.initialize()
+    _.each $('.audio-btn'), (btn)->
+      btn = $(btn)
+      btn.easyAudioEffects
+        # ogg : "/audio/"+$(btn).attr('id')+".ogg",
+        mp3 : "/audio/"+$(btn).attr('file')+".wav"
+        eventType : "click"
+        playType : "oneShotPolyphonic"
+    $('#capture').click ()->
+      playSound("Triangle")
+      
+
+
+#conversion      
+  %video
+#controls
+  %button.btn.btn-primary#capture
+    = glyph "camera"
+    CAPTURE
+  - @sounds.each do |s|
+    %button.audio-btn{id: s.gsub(" ", "-"), file: s}
+      = s
+  %input#threshold{type:"range", min: 0, max: 255, step: 1}
+.canvas-container
+  %canvas#paper-canvas#vision
+  .btn-group-vertical#zoom
+    %button#zoom-in.btn.btn-xs.btn-info
+      = glyph "plus"
+    %button#zoom-out.btn.btn-xs.btn-info
+      = glyph "minus"    
+
+%canvas#scratch
+
+
+
+  
+:scss
+  #scratch{
+    display: none; 
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 100000;
+    border: 1px solid red;
+
+  }
+  .audio-btn{
+    display:none;
+    z-index: 100;
+  }
+  $borderColor: #D3D3D3;
+  $arrowColor: #7A7A7A;
+  $subtleText: #80858B;
+
+  $activeBackground: #4573B9;
+  $activeText: #FFFFFF;
+  $activeSubtleText: #C5C5C5;
+  $activeArrowColor: #DDDDDD;
+  
+  $error: desaturate(#eb3941, 10%);
+  $errorBorder: darken(#eb3941, 20%);
+  $success: darken(#dff0d8, 30%);
+  $successText: white;
+
+  $formBlue: #3883fa;
+  $panelBackground: #F5F5F5;
+  $hoverText: #ECF1FA;
+  $eggshell: rgb(245, 244, 240);
+
+
+  html, body{
+    width: 100%; 
+    height: 100%;
+    overflow: hidden;
+    /*background: url("/station.jpg") no-repeat center #eee;
+    background-size: cover;*/
+  }
+  #conversion{
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-flow: nowrap column;
+    justify-content: center;
+    align-items: center;
+    video{
+      width: auto;
+      height: auto;
+    }
+  }
+  #controls{
+    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    height: 100%;
+    display: flex;
+    flex-flow: wrap row;
+    justify-content: flex-start;
+    align-items: flex-start;
+    padding: 15px;
+  }
+  .canvas-container{
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 100;
+    canvas{
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+    #zoom{
+      position: absolute;
+      top: 15px;
+      right: 15px;
+    }
+  }
+  
+  
+
+ 
+ 
+
+
+  
+  

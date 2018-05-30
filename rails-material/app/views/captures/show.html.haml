@@ -1,0 +1,18 @@
+- model_class = Capture
+.page-header
+  %h1=t '.title', :default => model_class.model_name.human.titleize
+
+%p
+  %strong= model_class.human_attribute_name(:file) + ':'
+  %br
+  %video{:height => "250px", :autoplay => "", :loop => "", :muted => "muted"}
+    %source{:src => @capture.file_url, :type => "video/webm"}
+      Your browser does not support HTML5 video tag.
+%p
+  - @capture.tags.split(" ").each do |t|
+    %span.label.label-info= t
+
+
+= link_to t('.back', :default => t("helpers.links.back")), captures_path, :class => 'btn btn-default'
+= link_to t('.edit', :default => t("helpers.links.edit")), edit_capture_path(@capture), :class => 'btn btn-default'
+= link_to t('.destroy', :default => t("helpers.links.destroy")), capture_path(@capture), :method => "delete", :data => { :confirm => t('.confirm', :default => t("helpers.links.confirm", :default => 'Are you sure?')) }, :class => 'btn btn-danger'

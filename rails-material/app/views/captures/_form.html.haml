@@ -1,0 +1,23 @@
+= form_for @capture, html: { multipart: true, class: "form form-horizontal capture" } do |f|
+  .form-group
+    = f.label :file, class: 'control-label col-lg-2'
+    .col-lg-10
+      - if not @capture.file.file.nil?
+        %video{:height => "250px", :autoplay => "", :loop => "", :muted => "muted", :poster => @capture.file_url(:jpg)}
+          %source{:src => @capture.file_url(:webm).gsub('.gif', ".webm"), :type => "video/webm"}
+          %source{:src => @capture.file_url(:mp4).gsub('.gif', ".mp4"), :type => "video/mp4"}
+            Your browser does not support HTML5 video tag.
+            %a{:href => @capture.file_url(:full)} Click here to view original GIF
+      = f.file_field :file, class: 'form-control', required: false
+    = f.error_span(:file)
+    = f.hidden_field :file_cache, class: 'form-control', required: false
+    = f.error_span(:file_cache)
+  .form-group
+    = f.label :tags, class: 'control-label col-lg-2'
+    .col-lg-10
+      = f.text_field :tags, class: 'form-control', required: true
+    = f.error_span(:tags)
+  .form-group
+    .col-lg-offset-2.col-lg-10
+      = f.submit nil, class: 'btn btn-primary'
+      = link_to t('.cancel', :default => t("helpers.links.cancel")), captures_path, :class => 'btn btn-default'

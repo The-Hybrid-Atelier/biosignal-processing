@@ -1,0 +1,165 @@
+:coffeescript
+  $ ->
+    $('.menu .item').tab()
+.hidden
+  - if false
+    - @sounds.each do |s|
+      %button.audio-btn{id: s.gsub(" ", "-"), file: s}
+      = s
+#artboard-settings.ui.modal.transition.small
+  .header Artboard Settings
+  .content
+    .ui.form
+      .ui.dividing.header Page Information
+
+      .field
+        %label Gutter Size
+      .field
+        .ui.labeled.input
+          %input{:value => "1", :type => "number"}/
+          .ui.basic.label
+            in
+      .inline.fields
+        %label Placement
+        .field
+          .ui.checkbox
+            %input{:name => "placement", :tabindex => "0", :type => "checkbox", :checked => "checked"}
+            %label Top
+        .field
+          .ui.checkbox
+            %input{:name => "placement", :tabindex => "0", :type => "checkbox", :checked => "checked"}
+            %label  Bottom
+        .field
+          .ui.checkbox
+            %input{:name => "placement", :tabindex => "0", :type => "checkbox"}
+            %label Left
+        .field
+          .ui.checkbox
+            %input{:name => "placement", :tabindex => "0", :type => "checkbox"}
+            %label Right
+
+      
+    
+      .two.fields
+        .field
+          %label Width
+          .ui.labeled.input
+            %input{:value => "4", :type => "number", :name => "width"}/
+            .ui.basic.label
+              in
+        .field
+          %label Height
+          .ui.labeled.input
+            %input{:value => "4", :type => "number", :name => "height"}/
+            .ui.basic.label
+              in
+
+  .actions
+    .ui.cancel.button.black Cancel
+    .ui.approve.button.positive.labeled.icon 
+      Approve
+      %i.checkmark.icon
+
+/ .ui.top.attached.tabular.menu
+/   %a.item{"data-tab" => "segmentation"} Segmentation
+/   %a.item{"data-tab" => "heatbrush"} Heat Brush
+/   %a.item.active{"data-tab" => "ziptie"} Ziptie
+- render partial: "segmentation"  
+/ - render partial: "heatbrush"  
+= render partial: "ziptie"  
+
+
+:css
+  body{
+    overflow: hidden;
+  }
+  .full{
+    height: 100%;
+  }
+  .tab{
+    height: 100%;
+    overflow: scroll; 
+    padding-bottom: 100px;
+  }
+  .audio-btn{
+    display: none;
+  }
+  .connection{
+    position: relative;
+    &:before{
+      content: " ";
+      display: inline-block;
+      width: 15px;
+      position: relative;
+      top: 0px;
+      height: 15px;
+      border-radius: 30px;
+      margin-right: 3px;
+    }
+    &.red:before{
+      background: desaturate(red, 40%);
+    }
+    &.black:before{
+      background: #333;
+    }
+    &.yellow:before{
+      background: desaturate(yellow, 20%);
+    }
+  }
+  @keyframes cf3FadeInOut {
+      0% {opacity:1;}
+      45% {opacity:1;}
+      55% {opacity:0;}
+      100% {opacity:0;}
+  }
+
+  .tp-note{
+      font-family: 'Handlee', cursive;
+  }
+  .tp{
+      font-family: 'Roboto', serif;
+  }
+  h2{
+    margin-left: 70px;
+  }
+  .thermonumber{
+      pointer: cursor;
+      height: 80px;
+      width: 40px;
+      position: relative;
+      margin: 0 15px;
+      float: left;
+      img {
+        position:absolute;
+        left:0;
+        -webkit-transition: opacity 0.5s ease-in-out;
+        -moz-transition: opacity 0.5s ease-in-out;
+        -o-transition: opacity 0.5s ease-in-out;
+        transition: opacity 0.5s ease-in-out;
+        width: 100%;
+      }
+      /*
+      img.top {
+          animation-name: cf3FadeInOut;
+          animation-timing-function: ease-in-out;
+          animation-iteration-count: infinite;
+          animation-duration: 3s;
+          animation-direction: alternate;
+      }
+      */
+      img.top:hover {opacity:0;}
+  }
+  .thermopainting{
+      pointer: cursor;
+      position: relative;
+
+      .heat, .cool {
+        position:absolute;
+        left:0;
+      }
+      img{
+        width: 100%;
+        padding: 0 !important;
+      }
+      .heat{display: none;}
+  }
