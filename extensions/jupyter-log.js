@@ -27,16 +27,13 @@ define([
         // This function is executed when the bug button is clicked
         // Should ideally set everything up and bind all events/callbacks
         var logHandler = function () {
-
             // TODO: Turn logging on and off when button is toggled
             // this doesn't work because events are bound
-            // need to find a way to easy bind and unbind
 
             loggingEnabled = !loggingEnabled
 
             if (!loggingEnabled) {
                 console.info('Logging disabled')
-                // unbind events
                 return
             }
 
@@ -46,8 +43,9 @@ define([
             // (I stole this one from ExecuteTime.js and can't figure out how to console hack the rest)
             //
             // Idea: if certain events (e.g. change selected cell, cell generates output vs. no output), are well-defined
-            // in Juptyer, then we won't have to mine jQuery events to infer what happened. However, jQuery events 
-            // might be useful for timing/rhythms.
+            // in Juptyer, then we won't have to hack away at jQuery events to infer what happened
+            //
+            // However, jQuery events might be useful for timing/rhythms
             //
             // Other events I know of from ExecuteTime.js: notebook_loaded.Notebook, kernel_restarting.Kernel
             events.on('execute.CodeCell', logCellDataAndUpdate);
@@ -93,7 +91,7 @@ define([
                         // cell.code_mirror 
                         //
                         // gives access to underlying CodeMirror library, including line counts
-                        // presumably text on each line, etc. Could be useful?
+                        // presumably text on each line, etc.
 
                     if (cell instanceof codecell.CodeCell) {
                         var ce = cell.element;
@@ -112,17 +110,16 @@ define([
                         });
                     }
 
-                    // dummy log data that will be pushed to master log that is saved later
                     log = {"type": "test", 
-                            "time": Date.now()
-                            "data": [0, 0, 0]}
+                            "time": Date.now(),
+                            "data": [0, 0, 0]};
 
                     logData.push(log)
                 }
             }
         };
 
-        // Defines log button
+        // Defines button object
         var log_action = {
             icon: 'fa-bug', // a font-awesome class used on buttons, https://fontawesome.com/icons
             help    : 'Log Jupyter Actions',
@@ -130,21 +127,20 @@ define([
             handler : logHandler
         };
         var prefix = 'a';
-        var log_action_name = 'log-data';
+        var log_action_name = 'logData';
 
         // Binds action to button and adds button to toolbar
         var full_log_action_name = Jupyter.actions.register(log_action, log_action_name, prefix); // returns 'my_extension:show-alert'
         Jupyter.toolbar.add_buttons_group([full_log_action_name]);
 
-        // Function that is called when save button is pressed
         var saveLog = function () {
             var data = JSON.stringify(logData, null, 4) // converts JSON to string
-            var blob = new File([data], {type: "application/json;charset=utf-8"});
+            var blob = new File([data], {type: "application/json;charset=utf-8"}); // maybe we want type: "application/json" instead?
             var timestamp = Date.now().toString()
             saveAs(blob, "log_data_" + timestamp + ".json");
         }
 
-        // Defines save button
+        // Defines button object
         var save_action = {
             icon: 'fa-save', // we should probably use a different icon – already in use
             help    : 'Save Jupyter logs',
@@ -152,7 +148,7 @@ define([
             handler : saveLog
         };
         var prefix = 'b';
-        var save_action_name = 'log-data';
+        var save_action_name = 'saveLog';
 
         // Binds action to button and adds button to toolbar
         var full_save_action_name = Jupyter.actions.register(save_action, save_action_name, prefix); // returns 'my_extension:show-alert'
@@ -164,8 +160,8 @@ define([
     };
 });
 
-// TODO: how to include/require FileSaver.js without copy-paste
-// source: https://github.com/eligrey/FileSaver.js/blob/master/src/FileSaver.js
+// TODO: how to use FileSaver.js without copy-paste
+// source https://github.com/eligrey/FileSaver.js/blob/master/src/FileSaver.js
 
 var saveAs = saveAs || (function(view) {
     "use strict";
