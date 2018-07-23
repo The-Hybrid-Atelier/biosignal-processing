@@ -1,5 +1,6 @@
 #= require_self
 #= require viz/code_timeline
+#= require viz/sensor_timeline
 window.human_time = (t)->
 	return moment(t * 1000).format("MM/DD hh:mm:ss")
 window.simple_time = (t)->
@@ -11,8 +12,9 @@ class window.Timeline
 		$('video').attr('src', video.mp4.url)
 
 	@ts: null	
-	load: (data)->
+	load: (channel, data)->
 		this.data = data
+		this.ui.setTitle channel.toUpperCase()
 		this.refresh()
 	constructor: (op)->
 		op = op or {}

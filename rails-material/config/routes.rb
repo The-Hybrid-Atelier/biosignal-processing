@@ -1,5 +1,6 @@
 Rails.application.routes.draw do
   get 'sensing/codes'
+  get 'sensing/vid'
 
   resources :participants do
   	member do 

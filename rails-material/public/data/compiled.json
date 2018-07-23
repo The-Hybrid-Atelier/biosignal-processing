@@ -98,6 +98,14 @@
           "c_time": "2018-05-21T17:24:19Z",
           "type": "zip"
         }
+      },
+      "codes": {
+        "acc":{
+          "url": "/data/sensor_data/acc_coded_cesar.json",
+          "timestamp": 1525736645.0,
+          "c_time": "2018-05-16T12:06:12Z",
+          "type": "codes_chart"
+        }
       }
     }
   },

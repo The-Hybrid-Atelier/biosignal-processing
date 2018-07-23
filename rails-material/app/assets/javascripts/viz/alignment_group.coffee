@@ -108,7 +108,8 @@ class window.AlignmentGroup extends paper.Group
 				t.pivot = t.bounds.rightCenter
 				t.position = this.children.background.bounds.leftCenter.add(new paper.Point(t.bounds.width * 1.8,0))
 			
-				
+	setTitle: (spec)->
+		this.children.title.content = spec
 	clear: ()->
 		wipe this, {data: {item: true}}
 		wipe this, {data: {ui: true}}
