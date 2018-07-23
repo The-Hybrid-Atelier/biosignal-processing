@@ -240,6 +240,31 @@ window.Utility.paperSetup = (id, op) ->
   #   console.info 'Paper.js installed:', w, 'x', h
   myPaper
 
+window.installPaper = (dimensions)->
+  # PAPER SETUP
+  markup = $('canvas#markup')[0]
+  paper.install window
+  vizpaper = new paper.PaperScope()
+  vizpaper.setup(markup)
+  vizpaper.settings.handleSize = 10
+  loadCustomLibraries()
+  return vizpaper
+
+window.makePaper = (parent)->
+  c = $('<canvas></canvas>')
+  parent.html(c)
+  c.attr
+    height: parent.height()
+  console.log parent.height()
+  p = new paper.PaperScope()
+  p.setup(c[0])
+  p.settings.handleSize = 10
+  new paper.Path.Circle
+    radius: 20
+    fillColor: "#00A8E1"
+    position: paper.view.center
+  return p
+
 
 
 window.loadCustomLibraries = ->

@@ -1,44 +1,57 @@
 # Place all the behaviors and hooks related to the matching controller here.
 # All this logic will automatically be available in application.js.
 # You can use CoffeeScript in this file: http://coffeescript.org/
-#= require papaparse.min
 #= require moment
+#= require paper
+#= require jquery-ui/core
+#= require jquery-ui/widget
+#= require jquery-ui/position
+#= require jquery-ui/widgets/mouse
+#= require jquery-ui/widgets/draggable
+#= require viz
+
+
 $ ->
-	# json = $.get "/data/data.csv", (file)->
-	color_scheme = ["red","orange","yellow","olive","green","teal","blue","violet","purple","pink","brown","grey","black"]
-	json = Papa.parse "/data/data.csv",
-		download: true 
-		header: true
-		before: (file)->
-			console.log "Reading", file
-		error: (err, file)->
-			alertify.error err.message, err.type, err.code, err.row
-		complete: (results, file)->
-			actors = _.unique(_.map results.data, (r)-> r.Code.split("\\")[1])
-			actors = _.object _.map actors, (a, i)-> 
-				[a, color_scheme[i]]
-			console.log "ACTORS", actors
+	window.env = new VizEnvironment
+		ready: ()->
+			scope = this
+			@event_binding()
+			@keybinding()
+		event_binding: ()->
+			$('.panel').draggable()
+			@reposition_video()
+			$(window).resize ()-> scope.reposition_video()
+			$("canvas").on 'wheel', (e)->
+				delta = e.originalEvent.deltaY
+				pt = paper.view.viewToProject(new paper.Point(e.originalEvent.offsetX, e.originalEvent.offsetY))
+				e = _.extend e, 
+					point: pt
+					delta: new paper.Point(e.originalEvent.deltaX, e.originalEvent.deltaY)
+				hits = _.filter paper.project.getItems({data: {class: "Timeline"}}), (el)->
+					return el.contains(pt)
+				_.each hits, (el)-> el.emit "mousedrag", e
 
-			results = _.groupBy results.data, (r)-> r["Document name"]
+			$('video').on 'loadeddata', (e)->
+				_.each Timeline.lines, (line)->
+					line.ui.video = this
+					line.ui.range.timestamp = Timeline.ts
+					line.refresh()
+		keybinding: ()->				
+			paper.tool = new paper.Tool
+				video: $('video')[0]
+				onKeyDown: (e)->
+					switch e.key
+						when "space"
+							if this.video.paused then this.video.play() else this.video.pause()
+	
+	grabber = new DataGrabber
+		success: (data)-> env.renderData(data)
 
-			results = _.mapObject results, (codes, k)->
-				codes = _.map codes, (code)->
-					start = moment(code.Begin, "HH:mm:ss.SSS", false)
-					end = moment(code.End, "HH:mm:ss.SSS", false)
-					code = code.Code.split("\\").slice(1)
-					rtn = 
-						actor: code[0] 
-						sub_codes: code.slice(1)
-						color: actors[code[0]] 
-						start: start.valueOf()
-						end: end.valueOf()
-						duration: end.valueOf() - start.valueOf()
-				min_time = _.min codes, (code)-> return code.start
-				min_time = min_time.start
-				# console.log "min_time", min_time
-				codes = _.map codes, (code)->
-					code.start = code.start - min_time
-					code.end = code.end - min_time
-					code
+		
 
-			console.log results
+
+
+	
+	
+	
+
