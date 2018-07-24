@@ -42,6 +42,7 @@ class window.DataGrabber
 			manifest[user].env.video.codes.data = _.map data.env.video.codes.data, (code)->
 				_.extend code, 
 					color: actors[code.actor]
+
 		return actors
 
 	acquireManifest: (callbackFn)->
