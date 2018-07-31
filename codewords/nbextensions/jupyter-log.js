@@ -1,6 +1,6 @@
 // Jupyter Notebook extension that logs various cell data on user generated events
 
-// Most of my code borrows heavily from: 
+// Most of my code borrows heavily from:
 // https://github.com/ipython-contrib/jupyter_contrib_nbextensions/blob/master/src/jupyter_contrib_nbextensions/nbextensions/execute_time/ExecuteTime.js
 
 // define([...], function(...) {..}) syntax is needed for require.js
@@ -46,23 +46,30 @@ define([
             // (I stole this one from ExecuteTime.js and can't figure out how to console hack the rest)
             //
             // Idea: if certain events (e.g. change selected cell, cell generates output vs. no output), are well-defined
-            // in Juptyer, then we won't have to mine jQuery events to infer what happened. However, jQuery events 
+            // in Juptyer, then we won't have to mine jQuery events to infer what happened. However, jQuery events
             // might be useful for timing/rhythms.
             //
             // Other events I know of from ExecuteTime.js: notebook_loaded.Notebook, kernel_restarting.Kernel
             events.on('execute.CodeCell', logCellDataAndUpdate);
 
-            // This function gets called every time a cell is executed. 
-            // Each event should append to 
+            // This function gets called every time a cell is executed.
+            // Each event should append to
             function logCellDataAndUpdate(evt, data) {
+
                 // Logs cell inner text content
                 var cell = data.cell;
                 console.log(cell.get_text())
-
+                logData.push({
+                  time: Date.now(),
+                  type: "code_execution",
+                  data: {
+                    text: cell.get_text()
+                  }
+                })
                 cells = Jupyter.notebook.get_cells() // gets all cell objects in notebook
 
                 for (var i = 0; i < cells.length; i++) { // iterates through all sells
-                    var cell = cells[i]; 
+                    var cell = cells[i];
 
 
                     // TODO: Define a full hierarchy of events and how to classify each
@@ -87,10 +94,10 @@ define([
                         // cell.bind_events()
 
                     // Get input div element (HTML)
-                        // cell.input 
+                        // cell.input
 
                     // Get underlying CodeMirror object
-                        // cell.code_mirror 
+                        // cell.code_mirror
                         //
                         // gives access to underlying CodeMirror library, including line counts
                         // presumably text on each line, etc. Could be useful?
@@ -101,23 +108,32 @@ define([
                         // Bind jQuery events to a cell
                         // Is there a more efficient way of doing this?
                         $(ce).unbind()
-                        $(ce).on("click mousedown mouseup keydown change",function(e) {
-                            console.log(e);
+                        $(ce).on("click mousedown mouseup keydown change", function(e) {  // HTML5 MouseEvents
+                            console.log("E", e, e.type);
+                            log = {type: e.type,
+                                   time: Date.now(),
+                                   data: {
+                                     x: e.clientX,
+                                     y: e.clientY
+                                   }
+                                 }
+
+                            logData.push(log)
 
                             // TODO: Break down jQuery events into subevents
                             // e.g.
-                            // if 'click' --> did they change cells? change cursor? 
+                            // if 'click' --> did they change cells? change cursor?
                             // if 'keydown' --> copy/paste? delete? undo/redo? type?
 
                         });
                     }
 
                     // dummy log data that will be pushed to master log that is saved later
-                    log = {"type": "test", 
-                            "time": Date.now()
-                            "data": [0, 0, 0]}
-
-                    logData.push(log)
+                    // log = {"type": "test",
+                    //         "time": Date.now()
+                    //         "data": [0, 0, 0]}
+                    //
+                    // logData.push(log)
                 }
             }
         };
