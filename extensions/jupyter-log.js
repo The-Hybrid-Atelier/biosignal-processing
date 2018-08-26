@@ -85,28 +85,28 @@ define([
                     if (outputs.length == 0) {
                         out = {}
                     } else {
-                        if (outputs[0].output_type == 'stream') {
-                            console.log('stream', outputs[0])
-                            out = {type: 'success',
-                                   text: outputs[0].text}
-                        } else if (outputs[0].output_type == 'execute_result') {
-                            console.log('result', outputs[0])
-                            out = {type: 'success',
-                                   text: outputs[0].data['text/plain']}
-                        } else if (outputs[0].output_type == 'error') {
-                            console.log(outputs[0])
-                            output_lines = outputs[0].traceback
-                            text = ''
-                            for (var j = 0; j < output_lines.length; j++) {
-                                line = output_lines[j]
-                                line = line.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
-                                text += line + '\n'
-                            }
+                        out = []
+                        for (var k = 0; k < outputs.length; k++) {
+                            if (outputs[0].output_type == 'stream') {
+                                out.push({type: 'success',
+                                       text: outputs[0].text})
+                            } else if (outputs[0].output_type == 'execute_result') {
+                                outpush({type: 'success',
+                                       text: outputs[0].data['text/plain']})
+                            } else if (outputs[0].output_type == 'error') {
+                                output_lines = outputs[0].traceback
+                                text = ''
+                                for (var j = 0; j < output_lines.length; j++) {
+                                    line = output_lines[j]
+                                    line = line.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
+                                    text += line + '\n'
+                                }
 
-                            out = {type: 'error',
-                                   error_name: outputs[0].ename,
-                                   error_value: outputs[0].evalue,
-                                   text: text}
+                                out.push({type: 'error',
+                                       error_name: outputs[0].ename,
+                                       error_value: outputs[0].evalue,
+                                       text: text})
+                            }
                         }
                     }
 
