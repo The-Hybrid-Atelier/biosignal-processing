@@ -31,10 +31,11 @@ define([
             loggingEnabled = !loggingEnabled
 
             if (!loggingEnabled) {
+                $('.fa-bug').css('color', 'red')
                 console.info('Logging disabled') // events will still fire but won't be saved
                 return
             }
-
+            $('.fa-bug').css('color', 'green')
             console.info('Logging Extension Loaded');
 
             function jQueryEventLogger(evt) {
