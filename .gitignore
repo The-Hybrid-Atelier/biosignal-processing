@@ -45,3 +45,4 @@ bower.json
 
 
 .ipynb_checkpoints
+.DS_Store
