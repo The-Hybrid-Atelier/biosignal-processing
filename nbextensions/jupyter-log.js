@@ -91,7 +91,7 @@ define([
                                 out.push({type: 'success',
                                        text: outputs[0].text})
                             } else if (outputs[0].output_type == 'execute_result') {
-                                outpush({type: 'success',
+                                out.push({type: 'success',
                                        text: outputs[0].data['text/plain']})
                             } else if (outputs[0].output_type == 'error') {
                                 output_lines = outputs[0].traceback
