@@ -1,6 +1,6 @@
 // Jupyter Notebook extension that logs various cell data on user generated events
 
-// Most of my code borrows heavily from: 
+// Most of my code borrows heavily from:
 // https://github.com/ipython-contrib/jupyter_contrib_nbextensions/blob/master/src/jupyter_contrib_nbextensions/nbextensions/execute_time/ExecuteTime.js
 
 // define([...], function(...) {..}) syntax is needed for require.js
@@ -27,99 +27,140 @@ define([
         // This function is executed when the bug button is clicked
         // Should ideally set everything up and bind all events/callbacks
         var logHandler = function () {
-            // TODO: Turn logging on and off when button is toggled
-            // this doesn't work because events are bound
 
             loggingEnabled = !loggingEnabled
 
             if (!loggingEnabled) {
-                console.info('Logging disabled')
+                $('.fa-bug').css('color', 'red')
+                console.info('Logging disabled') // events will still fire but won't be saved
                 return
             }
-
+            $('.fa-bug').css('color', 'green')
             console.info('Logging Extension Loaded');
 
-            // TODO: Figure out what other events are defined in Jupyter codebase
-            // (I stole this one from ExecuteTime.js and can't figure out how to console hack the rest)
-            //
-            // Idea: if certain events (e.g. change selected cell, cell generates output vs. no output), are well-defined
-            // in Juptyer, then we won't have to hack away at jQuery events to infer what happened
-            //
-            // However, jQuery events might be useful for timing/rhythms
-            //
-            // Other events I know of from ExecuteTime.js: notebook_loaded.Notebook, kernel_restarting.Kernel
-            events.on('execute.CodeCell', logCellDataAndUpdate);
+            function jQueryEventLogger(evt) {
+                if (evt.type == 'mousedown' || evt.type == 'mouseup') {
+                    meta = {x: evt.clientX,
+                            y: evt.clientY}
+                } else if (evt.type == 'keydown') {
+                    meta = {key: evt.key,
+                            code: evt.keyCode}
+                }
+                console.log(evt.type, meta)
 
-            // This function gets called every time a cell is executed. 
-            // Each event should append to 
-            function logCellDataAndUpdate(evt, data) {
-                // Logs cell inner text content
-                var cell = data.cell;
-                console.log(cell.get_text())
+                data = get_cell_data_and_rebind()
 
+                logData.push({
+                    type: evt.type,
+                    time: Date.now(),
+                    meta: meta,
+                    data: data
+                })
+            }
+
+            function get_cell_data_and_rebind() {
+                data = []
                 cells = Jupyter.notebook.get_cells() // gets all cell objects in notebook
 
-                for (var i = 0; i < cells.length; i++) { // iterates through all sells
-                    var cell = cells[i]; 
+                for (var i = 0; i < cells.length; i++) { // iterates through all cells
 
-
-                    // TODO: Define a full hierarchy of events and how to classify each
-                    // below are some starters
-
-                    // Get text content of a cell (does not log output)
-                        // console.log(cell.get_text())
-
-                        // Jupyter.notebook.get_cell_element(i)[0].innerText
-                        // --> returns full HTML text of cell, including Input and Output
-
-
-                    // Get cursor position (within selected cell)
-                        // cell.get_pre_cursor()
-                        // cell.get_cursor_cursor()
-                        //
-                        // e.g. "def fn|(x):"
-                        //     pre --> "def fn"
-                        //     post --> "(x)"
-
-                    // TODO: look into what this does, seems useful
-                        // cell.bind_events()
-
-                    // Get input div element (HTML)
-                        // cell.input 
-
-                    // Get underlying CodeMirror object
-                        // cell.code_mirror 
-                        //
-                        // gives access to underlying CodeMirror library, including line counts
-                        // presumably text on each line, etc.
-
-                    if (cell instanceof codecell.CodeCell) {
-                        var ce = cell.element;
-
-                        // Bind jQuery events to a cell
-                        // Is there a more efficient way of doing this?
-                        $(ce).unbind()
-                        $(ce).on("click mousedown mouseup keydown change",function(e) {
-                            console.log(e);
-
-                            // TODO: Break down jQuery events into subevents
-                            // e.g.
-                            // if 'click' --> did they change cells? change cursor? 
-                            // if 'keydown' --> copy/paste? delete? undo/redo? type?
-
-                        });
+                    if (typeof cells[i] == "undefined") {
+                        continue
                     }
 
-                    log = {"type": "test", 
-                            "time": Date.now(),
-                            "data": [0, 0, 0]};
+                    var cell = cells[i];
+                    var ce = cell.element;
 
-                    logData.push(log)
+                    // Bind jQuery events to a cell
+                    $(ce).unbind()
+                    $(ce).on("mousedown mouseup keydown", jQueryEventLogger);
+
+                    input = cell.get_text()
+
+                    if (typeof cell.output_area == "undefined") {
+                        outputs = []
+                    } else {
+                        outputs = cell.output_area.outputs
+                    }
+
+                    if (outputs.length == 0) {
+                        out = {}
+                    } else {
+                        out = []
+                        for (var k = 0; k < outputs.length; k++) {
+                            if (outputs[0].output_type == 'stream') {
+                                out.push({type: 'success',
+                                       text: outputs[0].text})
+                            } else if (outputs[0].output_type == 'execute_result') {
+                                out.push({type: 'success',
+                                       text: outputs[0].data['text/plain']})
+                            } else if (outputs[0].output_type == 'error') {
+                                output_lines = outputs[0].traceback
+                                text = ''
+                                for (var j = 0; j < output_lines.length; j++) {
+                                    line = output_lines[j]
+                                    line = line.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
+                                    text += line + '\n'
+                                }
+
+                                out.push({type: 'error',
+                                       error_name: outputs[0].ename,
+                                       error_value: outputs[0].evalue,
+                                       text: text})
+                            }
+                        }
+                    }
+
+                    data.push({
+                        id: cell.cell_id,
+                        type: cell.cell_type,
+                        in: input,
+                        out: out
+                    })
                 }
+
+                console.log(data)
+                return data
+            }
+
+            get_cell_data_and_rebind()
+
+            tracked_events = ['create.Cell',
+                              'delete.Cell',
+                              'execute.CodeCell',
+                              'kernel_killed.Kernel',
+                              'kernel_restarting.Kernel',
+                              'notebook_saved.Notebook',
+                              'rendered.MarkdownCell',
+                              'select.Cell'];
+
+
+            events.on(tracked_events.join(' '), jupyterEventLogger);
+
+            // This function handles every Jupyter event (not jQuery)
+            function jupyterEventLogger(evt, data) {
+                if (evt.type == 'select' || evt.type == 'execute' || evt.type == 'rendered') {
+                    meta = {id: data.cell.cell_id}
+                } else if (evt.type == 'create' || evt.type == 'delete') {
+                    meta = {id: data.cell.cell_id,
+                            index: data.index}
+                } else {
+                    meta = {}
+                }
+
+                console.log(evt.type, meta)
+                cell_data = get_cell_data_and_rebind()
+
+                logData.push({
+                  time: Date.now(),
+                  type: evt.type,
+                  meta: meta,
+                  data: cell_data
+                })                
             }
         };
 
-        // Defines button object
+        // Defines log button
         var log_action = {
             icon: 'fa-bug', // a font-awesome class used on buttons, https://fontawesome.com/icons
             help    : 'Log Jupyter Actions',
@@ -127,20 +168,37 @@ define([
             handler : logHandler
         };
         var prefix = 'a';
-        var log_action_name = 'logData';
+        var log_action_name = 'log-data';
 
         // Binds action to button and adds button to toolbar
         var full_log_action_name = Jupyter.actions.register(log_action, log_action_name, prefix); // returns 'my_extension:show-alert'
         Jupyter.toolbar.add_buttons_group([full_log_action_name]);
 
-        var saveLog = function () {
-            var data = JSON.stringify(logData, null, 4) // converts JSON to string
-            var blob = new File([data], {type: "application/json;charset=utf-8"}); // maybe we want type: "application/json" instead?
-            var timestamp = Date.now().toString()
-            saveAs(blob, "log_data_" + timestamp + ".json");
+        var getUserId = function() {
+            cells = Jupyter.notebook.get_cells()
+            uid = cells[0].get_text()
+            return uid
         }
 
-        // Defines button object
+
+        // Function that is called when save button is pressed
+        var saveLog = function () {
+            console.log(logData)
+            console.log(logData[0])
+
+            if (logData.length == 0) {
+                alert('Empty log, cancelling save')
+                return
+            }
+
+            var uid = getUserId()
+            var data = JSON.stringify(logData, null, 4) // converts JSON to string
+            var blob = new File([data], {type: "application/json;charset=utf-8"});
+            var timestamp = Date.now().toString()
+            saveAs(blob, "log_" + uid + "_" + timestamp + ".json");
+        };
+
+        // Defines save button
         var save_action = {
             icon: 'fa-save', // we should probably use a different icon – already in use
             help    : 'Save Jupyter logs',
@@ -148,7 +206,7 @@ define([
             handler : saveLog
         };
         var prefix = 'b';
-        var save_action_name = 'saveLog';
+        var save_action_name = 'log-data';
 
         // Binds action to button and adds button to toolbar
         var full_save_action_name = Jupyter.actions.register(save_action, save_action_name, prefix); // returns 'my_extension:show-alert'
@@ -160,8 +218,8 @@ define([
     };
 });
 
-// TODO: how to use FileSaver.js without copy-paste
-// source https://github.com/eligrey/FileSaver.js/blob/master/src/FileSaver.js
+// TODO: how to include/require FileSaver.js without copy-paste
+// source: https://github.com/eligrey/FileSaver.js/blob/master/src/FileSaver.js
 
 var saveAs = saveAs || (function(view) {
     "use strict";
