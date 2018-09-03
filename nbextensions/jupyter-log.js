@@ -33,10 +33,20 @@ define([
             if (!loggingEnabled) {
                 $('.fa-bug').css('color', 'red')
                 console.info('Logging disabled') // events will still fire but won't be saved
-                return
+                type = 'logstop'
+                
+            } else {
+                $('.fa-bug').css('color', 'green')
+                console.info('Logging Extension Loaded');
+                type = 'logstart'
             }
-            $('.fa-bug').css('color', 'green')
-            console.info('Logging Extension Loaded');
+
+            logData.push({
+                type: type,
+                time: Date.now(),
+                meta: {},
+                data: get_cell_data_and_rebind()
+            })
 
             function jQueryEventLogger(evt) {
                 if (evt.type == 'mousedown' || evt.type == 'mouseup') {
