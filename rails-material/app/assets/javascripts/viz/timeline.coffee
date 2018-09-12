@@ -350,6 +350,7 @@ class window.Timeline
 		
 			$('video').on "ratechange", ()->
 				rate.updateLabel this.playbackRate.toFixed(1)
+				
 	bindVideoEvents: (timeline)->
 		$('video').on 'timeupdate', (e)->
 			scrub = timeline.children.scrubber

@@ -13,10 +13,11 @@ class window.VizEnvironment
 			render_iron_imu: false
 			render_codes: true
 	reposition_video: ()->
-		pt = paper.project.getItem({name: "legend"}).bounds.bottomLeft
-		$('#video-container').css
-			top: pt.y + 30
-			left: pt.x + 20
+		if legend = paper.project.getItem({name: "legend"})
+			pt = legend.bounds.bottomLeft
+			$('#video-container').css
+				top: pt.y + 30
+				left: pt.x + 20
 		
 	renderData: (data)->
 		window.installPaper()
