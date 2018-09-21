@@ -7,6 +7,10 @@ class SensingController < ApplicationController
     @sounds = get_sounds()
     render :layout => "wide_app"
   end
+  def ontology
+    @sounds = get_sounds()
+    render :layout => "wide_app"
+  end
   def vid
   	@videos = get_videos()
   	@sounds = []

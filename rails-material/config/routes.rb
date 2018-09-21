@@ -2,6 +2,7 @@ Rails.application.routes.draw do
   get 'sensing/codes'
   get 'sensing/vid'
   get 'sensing/codebook'
+  get 'sensing/ontology'
 
   resources :participants do
   	member do 

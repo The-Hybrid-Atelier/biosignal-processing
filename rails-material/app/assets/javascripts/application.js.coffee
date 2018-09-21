@@ -250,19 +250,35 @@ window.installPaper = (dimensions)->
   loadCustomLibraries()
   return vizpaper
 
-window.makePaper = (parent)->
+window.makePlot = (op)->
   c = $('<canvas></canvas>')
-  parent.html(c)
+  op.parent.html(c)
+
   c.attr
-    height: parent.height()
-  console.log parent.height()
+    height: op.height
+    width: op.parent.width()
+
   p = new paper.PaperScope()
   p.setup(c[0])
   p.settings.handleSize = 10
-  new paper.Path.Circle
-    radius: 20
-    fillColor: "#00A8E1"
-    position: paper.view.center
+  p.plot = 
+  	height: op.height
+
+  # new paper.Path.Circle
+  #   radius: 20
+  #   fillColor: "#00A8E1"
+  #   position: paper.view.center
+  #   onMouseDown: (e)->
+  #   	op.parent.draggable( 'disable' )
+  #   	# e.preventDefault()
+  #   	# e.stopPropagation()
+  #   onMouseDrag: (e)->
+  #   	this.translate(e.delta)
+  #   	e.preventDefault()
+  #   	e.stopPropagation()
+  #   onMouseUp: (e)->
+  #   	op.parent.draggable( 'enable' )
+
   return p
 
 
