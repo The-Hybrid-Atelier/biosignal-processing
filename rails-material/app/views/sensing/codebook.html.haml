@@ -7,11 +7,11 @@
 			
 			.left
 				%select.ui.dropdown#codebook-select
-					%option{value: "/irb/111/emotion_111.vtt"} Emotion
 					%option{value: "/irb/111/motion_111.vtt"} Motion
+					%option{value: "/irb/111/emotion_111.vtt"} Emotion
+					%option{value: "/irb/111/jupyter2_111.vtt"} Jupyter Interactions
 					%option{value: "/irb/111/bio_111.vtt"} Bio
 					%option{value: "/irb/111/hr_111.vtt"} Heart Rate
-					%option{value: "/irb/111/jupyter_111.vtt"} Jupyter Interactions
 					%option{value: "/irb/111/phasic_111.vtt"} Phasic EDA Activity
 					%option{value: "/irb/111/kinnunen_111.vtt"} Kinnunen
 					%option{value: "/irb/111/q_111.vtt"} Question
@@ -256,7 +256,7 @@
 
 :coffeescript
 	$ ->
-		pm = new ProfileManager
+		window.pm = new ProfileManager
 			onLoad: ()->
 				handlers ()->
 					window.ui = new UIManager()

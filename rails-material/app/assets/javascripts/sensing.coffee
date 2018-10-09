@@ -47,6 +47,7 @@ window.handlers = (callback)->
 
 	$("video").on "loadstart", ()->
 		video = $(this)
+		force()
 		stage = $(this).parent()
 		segment = $(this).parents(".segment")
 		aspectRatio = parseFloat(segment.find('.aspect').attr('name'))

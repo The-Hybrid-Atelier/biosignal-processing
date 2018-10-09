@@ -81,9 +81,10 @@ class window.ProfileManager
 		window.activeUser = user
 		# $('track').attr('src', $(this).val().replaceAll('111', activeUser))
 		$('#codebook-select').trigger('change')
+		
 		# parents(".segment").find('.paper-plot').trigger('load')
 
-		@load_profile(user)
+		# @load_profile(user)
 
 
 
