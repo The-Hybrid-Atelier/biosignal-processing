@@ -46,7 +46,7 @@ def save_jsonfile(name, data):
     print("File saved!", name)
 
 # saves MTS samples in a separate JSON file
-def save_dataset(L, window_size, bounds, word_shape, description, users, features, 
+def save_samples(L, window_size, bounds, word_shape, description, users, features, 
                 subsequences, file_name):
     meta = {
         "L": L,
@@ -206,32 +206,3 @@ def constructMTS(users, features, scale=False):
                 
     umts = resampleFeatureMTS(umts, features)
     return umts, tsum, list(umts.keys()), maxmin
-
-############
-# SAMPLING #
-############
-
-def subsequences(a, L):
-    n, m = a.shape
-    windows = int(m/L)    
-    window_range = np.linspace(0, windows-1, (windows-1) * 2 + 1)
-    ss = []
-    for x in window_range:
-        ss.append(a[:, int(x*L):int((x+1)*L)])
-    return np.array(ss)
-
-def subsequenceMTS(umts, L):
-    sss = np.array([])
-    bounds = [0]
-    for u in umts: 
-        mts = umts[u]
-        ss = subsequences(mts, L)
-        print("sequences", u, ss.shape)
-        bounds.append(bounds[-1] + ss.shape[0])
-        if sss.shape[0] == 0:
-            sss = ss
-        else:
-            sss = np.concatenate((sss, ss))
-    word_shape = sss.shape[-2:]
-    sss = sss.reshape(sss.shape[0], -1)
-    return sss, bounds, word_shape
