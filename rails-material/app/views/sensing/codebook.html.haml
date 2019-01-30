@@ -1,4 +1,3 @@
-
 #metadata{src:"/irb/111/sessionmetadata_111.json"}
 #left-panel.panel
 	.ui.segment#codebook
@@ -15,8 +14,6 @@
 					%option{value: "/irb/111/phasic_111.vtt"} Phasic EDA Activity
 					%option{value: "/irb/111/kinnunen_111.vtt"} Kinnunen
 					%option{value: "/irb/111/q_111.vtt"} Question
-
-
 		
 				
 		.plot
@@ -25,12 +22,15 @@
 
 	
 	#primary-display.ui.segment.video-display 
+		.codeword
+			.codelabel
 		.ui.bar
 			.left
 				%select.ui.dropdown.fluid
 			.right
 				%button.ui.button.remove.gray.icon
 					%i.ui.icon.remove
+
 		.stage
 			%video#main
 				%source{:src => "/irb/111/data/screen_111_opt.mp4", :type => "video/mp4"}
