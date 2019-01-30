@@ -71,6 +71,18 @@ window.handlers = (callback)->
 			return cue.data
 		callback()
 
+	vid = $('video')[0]
+	$('track').on "cuechange", (c) ->
+		cue = vid.textTracks[0].activeCues[0].data		
+		console.log("Track", cue)
+		$('.codeword').css 'background', cue.color
+		$('.codelabel').html "C" + cue.code + "<br>"+ cue.width
+	# 	myCues = @activeCues
+	# 	_.each myCues, (cue) ->
+	# 		$('#captions').html(cue.data.code).css 'background', cue.data.color
+	# 		return
+	# 	return
+
 	$('#codebook-select').on 'change', (e)->
 		$('track').attr('src', $(this).val().replaceAll('111', activeUser))
 		$(this).parents(".segment").find('.paper-plot').trigger('load')
