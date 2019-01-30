@@ -75,7 +75,10 @@ window.handlers = (callback)->
 	$('track').on "cuechange", (c) ->
 		cue = vid.textTracks[0].activeCues[0].data		
 		console.log("Track", cue)
-		$('.codeword').css 'background', cue.color
+		if cue.color
+			$('.codeword').css 'background', cue.color
+		else
+			$('.codeword').css 'background', "black"
 		$('.codelabel').html "C" + cue.code + "<br>"+ cue.width
 	# 	myCues = @activeCues
 	# 	_.each myCues, (cue) ->
@@ -86,6 +89,14 @@ window.handlers = (callback)->
 	$('#codebook-select').on 'change', (e)->
 		$('track').attr('src', $(this).val().replaceAll('111', activeUser))
 		$(this).parents(".segment").find('.paper-plot').trigger('load')
+		cb = $(this).val().split("/")[3].split("_")[0]
+		$('.cgram img').attr "src", "/irb/datasets/images/"+cb+"_cbook.png"
+		$('.cbook img').attr "src", "/irb/datasets/images/"+cb+"_cgram.png"
+
+		
+		console.log "CODEBOOK SELECT", cb
+
+		# /irb/111/jupyter2_111.vtt
 
 	$(".video-display select").on 'change', (e)->
 			container = $(this).parents(".segment")

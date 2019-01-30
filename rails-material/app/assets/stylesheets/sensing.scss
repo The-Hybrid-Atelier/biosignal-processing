@@ -11,18 +11,47 @@ html, body{
 	height: 100%;
 	
 }
-.codeword{
+.cgram{
+	max-width: 30%;
+	img{
+		width: 100%;
+	}
+
+}
+.cbook{
+	max-width: 70%;
+	img{
+		width: 100%;
+	}
+}
+.group{
 	display: flex;
 	justify-content: center;
+	flex-flow: wrap row;
 	align-items: center;
-	position: absolute;
+
+}
+.codebar{
+	
 	width: 30px;
 	z-index: 100;
 	height: 100%;
-	background: orange;
+	background: white;
 	border: 1px solid white;
+	position: absolute;
 	left: 0px;
 	top: 0px;
+	
+}
+
+.codeword{
+	position: absolute;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	
+	width: 100%;
+	height: 100%;
 }
 .codelabel{
 	font-size: 10px;
