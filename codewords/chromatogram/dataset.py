@@ -6,6 +6,9 @@ from scipy import stats
 import pandas as pd
 import matplotlib.pyplot as plt
 
+from chromatogram.visualization import COLOR_MAP
+import cmocean
+
 # from chromatogram.codebook import Codebook
 # import chromatogram
 
@@ -261,10 +264,11 @@ def sparsify(row):
         sparse.append((curr_cw, w))
         return sparse
 
-def save_subtitles(cgram, users, window_size, prefix):
+def save_subtitles(cgram, prefix):
 
     def make_vtt(u, codes, prefix):
-        vtt_filename = os.path.join('irb', str(u), prefix+"_"+str(u)+".vtt")
+        # vtt_filename = os.path.join('irb', str(u), prefix+"_"+str(u)+".vtt")
+        vtt_filename = os.path.join('/Users/mjoerke/Desktop/vtt_files', str(u), prefix+"_"+str(u)+".vtt")
         
         with open(vtt_filename, 'w') as f:
             f.write("WEBVTT FILE\n")
@@ -297,13 +301,27 @@ def save_subtitles(cgram, users, window_size, prefix):
         
         print("File saved!", vtt_filename)
 
-    N = np.max(cgram)
-    cm = plt.get_cmap("Set3")
-    colors = [cm(i) for i in np.linspace(0, 1, N+1)]
+    K = cgram.codebook.K
+    users = cgram.mts.users
+    window_size = cgram.mts.word_shape[1]
+
+    cm_props = COLOR_MAP[cgram.mts.feat_class]
+    cm = cm_props[0]
+    cm = cmocean.tools.lighten(cm, cm_props[1])
+    cm = cmocean.tools.crop_by_percent(cm, cm_props[2], which=cm_props[3], N=None)
+    if len(cm_props) == 6:
+        cm = cmocean.tools.crop_by_percent(cm, cm_props[4], which=cm_props[5], N=None)
+
+    values = list(range(K + 1))
+    if hasattr(cgram, 'reorder_colors'):
+        values = cgram.reorder_colors(values)
+
+    colors = [cm((values[i]) / K) for i in range(K+1)]
 
     for i in range(len(users)):
         u = users[i]
-        row = cgram[i]
+
+        row = cgram.chromatogram[i]
         sparse_row = sparsify(row)
         make_vtt(u, sparse_row, prefix)
 

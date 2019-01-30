@@ -3,6 +3,7 @@ import json, datetime, time, os, random, platform, sys
 
 import scipy
 from tslearn import metrics as tsm
+from matplotlib import colors
 
 from scipy import ndimage, signal
 import scipy.spatial.distance as distance
@@ -17,6 +18,7 @@ np.set_printoptions(precision=3, suppress=True)  # suppress scientific float not
 
 from chromatogram.dataset import get_file, mts2df, df2mts, MTS
 from chromatogram import visualization
+import cmocean
 
 class Codebook:
     def __init__(self, mts):
@@ -27,6 +29,7 @@ class Codebook:
     def distill(self, cull_threshold):
         sss = self.mts.samples
         word_shape = self.mts.word_shape
+        self.cull = cull_threshold
 
         # Sample using greedy k-centers clustering
         N = sss.shape[0]
@@ -40,6 +43,7 @@ class Codebook:
 
         self.centers = sample_kcenters(code_sample, [seed], dtw, cull_threshold)
         M = self.centers.shape[0]
+        self.M = M
         print('Sampled M={} centers, {:.2f}%% of original N={} sequences'.format(M, (M / N) * 100, N))
         print("--------------------------------------------------")
 
@@ -81,6 +85,8 @@ class Codebook:
 
         self.codebook = codebook
         self.extracted = True
+
+        self.reorder_colors = lambda x: x
         return codebook
 
     def visualize_linkage(self, d=0):
@@ -99,7 +105,7 @@ class Codebook:
         if not self.extracted:
             print("Must call Codebook.extract() before visualize_codewords")
 
-        return visualization.vis_codewords(self.codebook, self.K, self.mts.word_shape, self.mts.feat_class.title())
+        return visualization.vis_codewords(self)
 
     def apply(self, smoothing_window=0, sigma=4):
         assert self.extracted, "Must call Codebook.extract() before applying codebook"
@@ -110,8 +116,16 @@ class Chromatogram:
     def __init__(self, mts, codebook):
         self.mts = mts
         self.codebook = codebook
+        self.users = self.mts.users
+
+        self.clustered = False
 
     def render(self, smoothing_window=0, sigma=3):
+        self.reset()
+
+        if hasattr(self, 'chromatogram'):
+            self.chromatogram = self.raw
+
         if smoothing_window > 0:
             assert smoothing_window % 2 == 1, 'Smoothing window must be odd'
         dtw = make_multivariate_dtw(self.mts.word_shape)
@@ -133,7 +147,7 @@ class Chromatogram:
                 max_val = min(i+(S // 2), M)
 
                 dsum = np.sum(data[min_val:max_val], axis=0)
-                most_common = np.argmax(dsum) + 1
+                most_common = np.argmin(dsum) + 1
                 output.append(most_common)
             return np.array(output)
 
@@ -167,19 +181,26 @@ class Chromatogram:
                 chromatogram[i, :sizes[i]] = window_smooth(gaussian_smooth(data, sigma), smoothing_window)
 
             elif sigma > 0 and smoothing_window == 0:
-                chromatogram[i, :sizes[i]] = np.argmax(gaussian_smooth(data, sigma), axis=1) + 1
+                chromatogram[i, :sizes[i]] = np.argmin(gaussian_smooth(data, sigma), axis=1) + 1
 
             elif sigma == 0 and smoothing_window > 0:
                 chromatogram[i, :sizes[i]] = window_smooth(data, smoothing_window)
 
             else:
-                chromatogram[i, :sizes[i]] = np.argmax(data, axis=1) + 1
+                chromatogram[i, :sizes[i]] = np.argmin(data, axis=1) + 1
 
-            raw[i, :sizes[i]] = np.argmax(data, axis=1) + 1
+            raw[i, :sizes[i]] = np.argmin(data, axis=1) + 1
 
         self.chromatogram = chromatogram
         self.raw = raw
+
+        self.smoothing_window = smoothing_window
+        self.sigma = sigma
         self.smoothing_stats()
+
+    def reset(self):
+        self.users = self.mts.users
+        self.clustered = False
 
     def smoothing_stats(self):
         U, T = self.raw.shape
@@ -223,16 +244,144 @@ class Chromatogram:
                 last_raw = curr_raw
                 last_smooth = curr_smooth
 
+        self.d_raw = raw_changes / U
+        self.d_smooth = smooth_changes / U
+
         print("SMOOTHING STATS: Δ_raw={}, Δ_smooth={}, ratio={:.4f}".format(raw_changes, smooth_changes, raw_changes / smooth_changes))
         print("CW LENGTH STATS: μ_raw   ={:.4f}, σ_raw   ={:.4f}\n                 μ_smooth={:.4f}, σ_smooth={:.4f}"\
             .format(np.mean(raw_len), np.std(raw_len), 
                                                                                      np.mean(smooth_len), np.std(smooth_len)))
 
-    def visualize(self):
-        visualization.plot_chromatogram(self, self.mts.users)
+    def reorder_colors(self, u1, u2):
+        freqs = self.get_freqs_per_user(ax=1)
+        diff = abs(freqs[u1].mean(axis=0) - freqs[u2].mean(axis=0))
 
-    def plot_user(self, user, sigma=3):
-        visualization.plot_user(self, user, sigma)
+        # fix motion codebook
+        if len(diff) == 2:
+            diff[0] += 0.01
+
+        order = np.argsort(diff)
+
+        def reorder(x):
+            x = int(x)
+            if x == 0:
+                return 0
+            return order[x-1]+1
+
+        self.reorder_colors = np.vectorize(reorder)
+        self.codebook.reorder_colors = np.vectorize(reorder)
+        self.color_order = order
+
+    def cluster_users(self, on='freqs'):
+        self.reset()
+
+        if on =='freqs':
+            freqs = self.get_freqs_per_user()
+
+        elif on == 'logfreqs':
+            freqs = self.get_freqs_per_user()
+            freqs = np.log(freqs + 1e-12)
+
+        elif on == 'markov':
+            K = self.codebook.K
+            U = len(self.users)
+            markov = self.get_markov_model()
+
+            freqs = np.zeros((U, K*K))
+
+            for i in range(U):
+                freqs[i] = markov[self.users[i]].flatten()
+
+        elif on == 'width':
+            freqs = self.get_freqs_per_user()
+            len_per_user = self.get_lengths_per_user()
+
+            K = self.codebook.K
+            U = len(self.users)
+            lengths = np.zeros((U, 2*K))
+
+            for i in range(U):
+                u = self.users[i]
+                for k, l in len_per_user[u].items():
+                    if len(l) > 0:
+                        l = np.array(l)
+                        lmin = np.min(l)
+                        lmax = np.max(l)
+
+                        if lmax == lmin:
+                            lengths[i, k-1] = np.mean(l) - lmin
+                        else:
+                            lengths[i, k-1] = (np.mean(l) - lmin) / (lmax - lmin)
+
+                    else:
+                        lengths[i, k-1] = 0
+        elif on == 'interp':
+            U, max_len = self.chromatogram.shape
+            freqs = np.zeros((U, max_len))
+
+            for i in range(U):
+                row = np.trim_zeros(self.chromatogram[i])
+                row_len = len(row)
+
+                if row_len == max_len:
+                    freqs[i] = row
+
+                else:
+                    step = max_len / row_len
+                    x = list(range(max_len))
+                    xp = [step * i for i in range(row_len)]
+                    freqs[i] = np.rint(np.interp(x, xp, row))
+
+        else:
+            print("Unknown parameter {}".format(on))
+
+        ordering = self.duo_cluster(freqs, np.array(self.users), 0)
+        
+        self.users = list(ordering)
+        print("New ordering: ", ordering)
+
+        idx = np.argsort(ordering)
+        idx = np.argsort(idx)
+
+        self.clustered = True
+        self.chromatogram = self.chromatogram[idx]
+        self.raw = self.raw[idx]
+
+    def duo_cluster(self, cbf, group, level):
+        tabs = ""
+        t = level
+        while t > 0:
+            tabs = tabs + "\t"
+            t = t - 1
+            
+        print(tabs, group.shape[0], "USERS", group)
+        if group.shape[0] <= 2:
+            return group
+        
+        CF = linkage(cbf, method='complete', metric="euclidean")
+        clusters = fcluster(CF, 2, criterion='maxclust')
+        g1 = np.where(clusters == 1)
+        g2 = np.where(clusters == 2)
+        if len(g1[0]) == len(group):
+            return group
+       
+        u1 = group[g1]
+        u2 = group[g2]
+
+        if level == 0:
+            self.reorder_colors(g1, g2)
+
+        cbf1 = cbf[g1]
+        cbf2 = cbf[g2]
+
+        return np.concatenate(np.array([self.duo_cluster(cbf1, u1, level + 1), 
+                                        self.duo_cluster(cbf2, u2, level+1)]))
+
+    def visualize(self):
+        visualization.plot_chromatogram(self, self.users)
+
+    def plot_user(self, user, sigma=3, ylim=None):
+        visualization.plot_user(self, user, sigma, ylim)
 
     def get_codeword_distribution(self):
         dist = {i+1: 0 for i in range(self.codebook.K)}
@@ -278,7 +427,7 @@ class Chromatogram:
         return lengths
 
     def get_lengths_per_user(self):
-        users = self.mts.users
+        users = self.users
         K = self.codebook.K
 
         len_per_user = {}
@@ -312,7 +461,7 @@ class Chromatogram:
         markov = {}
 
         K = self.codebook.K
-        users = self.mts.users
+        users = self.users
 
         for i in range(len(users)):
             transition_matrix = np.zeros((K, K))
@@ -331,6 +480,28 @@ class Chromatogram:
             markov[users[i]] = transition_matrix
 
         return markov
+
+    def get_freqs_per_user(self, ax=1):
+        K = self.codebook.K
+        U = len(self.users)
+        freqs = np.zeros((U, K))
+
+        for i in range(U):
+            row = self.chromatogram[i]
+
+            for j in range(len(row)):
+                cw = int(row[j])
+                if cw == 0:
+                    break
+                else:
+                    freqs[i, cw - 1] += 1
+
+        sums = freqs.sum(axis=ax) + 1e-12
+        if ax == 1:
+            freqs = freqs / sums[:, np.newaxis]
+        else:
+            freqs = freqs / sums[np.newaxis, :]
+        return freqs
 
 ############
 # SAMPLING #
