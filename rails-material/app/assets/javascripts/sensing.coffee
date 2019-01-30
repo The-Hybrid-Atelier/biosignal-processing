@@ -91,7 +91,11 @@ window.handlers = (callback)->
 		$(this).parents(".segment").find('.paper-plot').trigger('load')
 		cb = $(this).val().split("/")[3].split("_")[0]
 		$('.cgram img').attr "src", "/irb/datasets/images/"+cb+"_cbook.png"
+			.click ()->
+				$(this).parent().toggleClass("full")
 		$('.cbook img').attr "src", "/irb/datasets/images/"+cb+"_cgram.png"
+			.click ()->
+					$(this).parent().toggleClass("full")
 
 		
 		console.log "CODEBOOK SELECT", cb

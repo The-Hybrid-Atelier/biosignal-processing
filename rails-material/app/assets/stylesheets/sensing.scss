@@ -13,13 +13,19 @@ html, body{
 }
 .cgram{
 	max-width: 30%;
+	&.full{
+		max-width: 100%;
+	}
 	img{
 		width: 100%;
 	}
 
 }
 .cbook{
-	max-width: 70%;
+	max-width: 30%;
+	&.full{
+		max-width: 100%;
+	}
 	img{
 		width: 100%;
 	}
@@ -29,6 +35,7 @@ html, body{
 	justify-content: center;
 	flex-flow: wrap row;
 	align-items: center;
+	margin-top: 15px;
 
 }
 .codebar{
@@ -42,6 +49,22 @@ html, body{
 	left: 0px;
 	top: 0px;
 	
+}
+
+.ui.bar{
+	z-index: 10000;
+	position: absolute;
+	top: 0;
+	left: 4px;
+
+}
+.ui.dropdown.tiny{
+	height: 0.6em !important;
+	width: 1.5em;
+	font-size: 0.6em !important;
+	.item{
+		font-size: 0.8em !important;
+	}
 }
 
 .codeword{
