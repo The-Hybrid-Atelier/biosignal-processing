@@ -1,6 +1,6 @@
 window.activeUser = null
 window.user_list = null
-window.avatars = 
+window.avatars =
 	Male:[
 		"m1.png"
 		"m2.png"
@@ -53,7 +53,7 @@ class window.ProfileManager
 				p.find(".user").html(user)
 				p.find('img').attr('src', "/avatars/" + img)
 
-				# ADDITIONAL DESCRIPTOR 
+				# ADDITIONAL DESCRIPTOR
 				_.each info, (val, prop)->
 					prop = prop.toLowerCase().replaceAll(" ", "_")
 					if prop == "years_programming"
@@ -77,18 +77,18 @@ class window.ProfileManager
 		$("#metadata").attr('src', src)
 
 		$(".paper-plot").trigger('load')
-		
+
 		window.activeUser = user
 		# $('track').attr('src', $(this).val().replaceAll('111', activeUser))
 		$('#codebook-select').trigger('change')
-		
+
 		# parents(".segment").find('.paper-plot').trigger('load')
 
-		# @load_profile(user)
+		@load_profile(user)
 
 
 
-		
+
 		configureResource
 			user: user
 			metadata: "notesmetadata"
@@ -111,7 +111,7 @@ class window.ProfileManager
 	load_profile: (user)->
 		scope = this
 		info = user_list[user]
-		
+
 		id = _.keys(user_list).indexOf(user.toString())
 		$('#avatar').attr('src', "/avatars/"+avatars[info.Gender][id])
 		profile = $('#user-profile .content')
@@ -128,11 +128,11 @@ class window.ProfileManager
 
 			if _.isObject(value)
 				if not _.isArray(value)
-					value_p = _.map value.Positive, (v)-> return $('<span>').html(v) 
-					value_n = _.map value.Negative, (v)-> return $('<span>').html(v) 
+					value_p = _.map value.Positive, (v)-> return $('<span>').html(v)
+					value_n = _.map value.Negative, (v)-> return $('<span>').html(v)
 					not_span = $('<span></span>').addClass('not').html("not")
 					value = value_p
-				
+
 				if span.hasClass('list')
 					span.find('.item').not('.template').remove()
 					_.each value, (v)->
@@ -142,15 +142,15 @@ class window.ProfileManager
 							.find('.value').html(v)
 				else
 					span.find("."+prop).html(value)
-			else			
-				
-				
+			else
+
+
 				if span.hasClass('rating')
 					span.rating("set rating", parseInt(value))
 				else
 					span.html(value)
 	semantify_list: (prefix, arr, suffix)->
-		if arr.length == 0 
+		if arr.length == 0
 			return ""
 		else if arr.length == 1
 			a = arr[0]
@@ -159,10 +159,10 @@ class window.ProfileManager
 			a = arr.slice(0, -1).join(', ')
 			b = arr.slice(-1)
 			return "#{prefix}#{a} and #{b}#{suffix}"
-	
+
 	programming_background_and_style: (value)->
 		scope = this
-		semantics = 
+		semantics =
 			exposure: []
 			learn: []
 			other: []
@@ -173,7 +173,7 @@ class window.ProfileManager
 				return v.toLowerCase().includes(k)
 
 		semantics["other"] = _.difference(value, _.flatten(_.values(semantics)))
-		learning = _.map semantics.learn, (l)-> 
+		learning = _.map semantics.learn, (l)->
 			l = l.split(" ")[0].toLowerCase()
 			if _.contains(["collaborative", "independent"], l)
 				l = l + "ly"
@@ -183,5 +183,5 @@ class window.ProfileManager
 		exposure = _.map semantics.exposure, (l)-> l.split(" ")[0].toLowerCase()
 		exposure_s = scope.semantify_list("They had ", exposure, " exposure to programming.")
 		other_s = scope.semantify_list("They consider themselves a ", semantics.other, ".")
-		
+
 		return "#{learning_s} #{exposure_s} #{other_s}"

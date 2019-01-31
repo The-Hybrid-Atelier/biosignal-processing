@@ -4,7 +4,7 @@
 	.ui.segment#codebook
 		.type CODEBOOKS
 		.ui.bar
-			
+
 			.left
 				%select.ui.dropdown#codebook-select
 					%option{value: "/irb/111/motion_111.vtt"} Motion
@@ -17,14 +17,14 @@
 					%option{value: "/irb/111/q_111.vtt"} Question
 
 
-		
-				
+
+
 		.plot
 			.plottitle Codebooks
 			.plotarea.paper-plot
 
-	
-	#primary-display.ui.segment.video-display 
+
+	#primary-display.ui.segment.video-display
 		.ui.bar
 			.left
 				%select.ui.dropdown.fluid
@@ -39,9 +39,9 @@
 		.ui.bar.bottom
 			.ui#controls
 				.ui.buttons.subcontrols.two
-					%button.ui.button.tplay.icon 
+					%button.ui.button.tplay.icon
 						%i.play.icon
-					
+
 					%button.ui.button.icon.toggle-menu.blue
 						%i.icon.move
 				.change.ui.buttons.small.subcontrols
@@ -62,7 +62,7 @@
 					%button.ui.button.trotateleft.icon ↻
 					%button.ui.button.trotateright.icon ↺
 					%button.ui.button.treset.icon reset
-	#secondary-display.ui.segment.video-display 
+	#secondary-display.ui.segment.video-display
 		.ui.bar
 			.left
 				%select.ui.dropdown.fluid
@@ -76,7 +76,7 @@
 		.ui.bar.bottom
 			.ui#controls
 				.ui.buttons.subcontrols.two
-					%button.ui.button.tplay.icon 
+					%button.ui.button.tplay.icon
 						%i.play.icon
 					%button.ui.button.icon.toggle-menu.blue
 						%i.icon.move
@@ -120,7 +120,7 @@
 					%span.years_programming
 					yr exp.
 					[
-					%span.overall_rating 
+					%span.overall_rating
 					]
 		%br
 		.content.ui.container
@@ -135,7 +135,7 @@
 				.statistic
 					.value.hours_programming_per_week
 					.label HR/WK
-				
+
 			%table.table.ui.table.fluid.collapsing.striped.very.compact
 				%tr
 					%td Background
@@ -184,8 +184,8 @@
 							.item.template.hidden
 								.content.value
 
-		
-			
+
+
 
 	#bio-data.ui.segment.blue
 		.type bio data
@@ -195,7 +195,7 @@
 		.plot
 			.plottitle HR
 			.plotarea.paper-plot{src: "/irb/111/hr_111.json"}
-		
+
 		.plot
 			.plottitle TEMP
 			.plotarea.paper-plot{src: "/irb/111/temp_111.json"}
@@ -231,7 +231,7 @@
 			.plottitle q4
 			.plotarea.paper-plot{src: "/irb/111/q4_111.json", color: "green"}
 
-		
+
 	#acc-data.ui.segment.red
 		.type Jupyter
 		.plot
@@ -249,6 +249,30 @@
 		.plot
 			.plottitle TEXTCHUNK
 			.plotarea.paper-plot{src: "/irb/111/textchunk_111.json"}
+	#kinnunen-data.ui.segment.purple
+		.type Kinnunen
+		.plot
+			.plottitle SUCCEDING
+			.plotarea.paper-plot{src: "/irb/111/succeding_111.json"}
+		.plot
+			.plottitle SUCCESS
+			.plotarea.paper-plot{src: "/irb/111/success_111.json"}
+		.plot
+			.plottitle SUBMITTING
+			.plotarea.paper-plot{src: "/irb/111/submitting_111.json"}
+		.plot
+			.plottitle GETTINGSTARTED
+			.plotarea.paper-plot{src: "/irb/111/getting-started_111.json"}
+		.plot
+			.plottitle DEALINGWITHDIFFICULTIES
+			.plotarea.paper-plot{src: "/irb/111/dealing-with-difficulties_111.json"}
+		.plot
+			.plottitle ENCOUNTERINGDIFFICULTIES
+			.plotarea.paper-plot{src: "/irb/111/encountering-difficulties_111.json"}
+		.plot
+			.plottitle FAILING
+			.plotarea.paper-plot{src: "/irb/111/failing_111.json"}
+
 	#notes-display.ui.segment.blue
 		%select.ui.fluid.dropdown
 		#notes.ui.segment
@@ -263,7 +287,3 @@
 					window.plt = new PlotManager()
 					$(".paper-plot").trigger('load')
 				$('#'+111).click() # DEFAULT USER
-
-	
-
-		
