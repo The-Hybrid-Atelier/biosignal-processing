@@ -4,22 +4,26 @@
 		.type CODEBOOKS
 		.ui.bar
 			
+
 			.left
 				%select.ui.dropdown.tiny#codebook-select
-					%option{value: "/irb/111/motion_111.vtt"} Motion
 					%option{value: "/irb/111/emotion_111.vtt"} Emotion
-					%option{value: "/irb/111/jupyter2_111.vtt"} Jupyter Interactions
+					%option{value: "/irb/111/jupyter_111.vtt"} Jupyter Interactions
+					%option{value: "/irb/111/kinnunen_111.vtt"} Kinnunen
 					%option{value: "/irb/111/bio_111.vtt"} Bio
 					%option{value: "/irb/111/hr_111.vtt"} Heart Rate
 					%option{value: "/irb/111/phasic_111.vtt"} Phasic EDA Activity
-					%option{value: "/irb/111/kinnunen_111.vtt"} Kinnunen
 					%option{value: "/irb/111/q_111.vtt"} Question
-		
+					%option{value: "/irb/111/motion_111.vtt"} Motion
+		.codes.buttons
 		.group
 			.cbook
 				%img{src:"/irb/datasets/images/motion_cbook.png"}
 			.cgram
 				%img{src:"/irb/datasets/images/motion_cgram.png"}
+			.cchar
+				%img{src:"/irb/datasets/images/motion_char.png"}
+
 		.plot
 			.plottitle.chromatogram User Chromatogram
 			.plotarea.paper-plot
@@ -268,7 +272,7 @@
 					window.plt = new PlotManager()
 					$(".paper-plot").trigger('load')
 				$('#'+111).click() # DEFAULT USER
-
+				
 	
 
 		

@@ -84,7 +84,7 @@ class window.ProfileManager
 		$('.plottitle.chromatogram').html("User " + user)
 		# parents(".segment").find('.paper-plot').trigger('load')
 
-		# @load_profile(user)
+		@load_profile(user)
 
 
 
@@ -109,13 +109,16 @@ class window.ProfileManager
 
 
 	load_profile: (user)->
+		console.log "LOADING PROFILE", user
 		scope = this
 		info = user_list[user]
 		
 		id = _.keys(user_list).indexOf(user.toString())
 		$('#avatar').attr('src', "/avatars/"+avatars[info.Gender][id])
 		profile = $('#user-profile .content')
+
 		_.each info, (value, prop)->
+
 			prop = prop.toLowerCase().replaceAll(" ", "_")
 			span = profile.find("." +prop)
 			if prop == "years_programming"
