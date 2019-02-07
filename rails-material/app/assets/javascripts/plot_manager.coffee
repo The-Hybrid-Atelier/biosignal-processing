@@ -33,7 +33,7 @@ class window.Plot extends paper.Group
 					this.goTo(p)
 					_.each $("video"), (v)-> 
 						v.currentTime = p * v.duration
-						v.play()
+						# v.play()
 				onMouseDown: (e)->
 					this.resolveAndPlay(e)
 					e.preventDefault()
@@ -47,7 +47,8 @@ class window.Plot extends paper.Group
 					e.preventDefault()
 					e.stopPropagation()
 		goTo: (p)->
-			this.children.scrubber.goTo(p)
+			if this.children.scrubber
+				this.children.scrubber.goTo(p)
 
 		add_scrubber: ()->
 			scope = this
@@ -89,8 +90,7 @@ class window.Plot extends paper.Group
 
 		line: (op)->
 			scope = this
-			$.getJSON op.src, (contents)->	
-
+			$.getJSON(op.src, (contents)->	
 				if contents.sampling_rate
 					adjustData contents.data, contents.timestamp, contents.sampling_rate, (data)->
 						if op.src.includes('smna')
@@ -99,7 +99,15 @@ class window.Plot extends paper.Group
 				else
 					scope._line(contents.data.y, op)
 				scope.add_scrubber()
-				
+			).fail ()->
+				scope.parent.style.fillColor = "gray"
+				bg = new paper.Path.Rectangle
+					parent: scope
+					name: "bg"
+					rectangle: paper.view.bounds
+					fillColor: "orange"
+				bg.scaling.y = 0.9
+				bg.sendToBack()
 			
 		_line: (data, op)->
 			
@@ -134,6 +142,8 @@ class window.Plot extends paper.Group
 		load_cues: ()->
 			scope = this
 			anchor = this.children.anchor
+
+			
 			_.each cues, (c)->
 				if c.code != "0" 
 					r = new paper.Path.Rectangle
@@ -161,6 +171,7 @@ class window.PlotManager
 		scope = this
 		this.plots = {}
 		$(".paper-plot").on "load", (e)->
+
 			container = $(this)
 			src = container.attr('src')
 			color = container.attr('color')
@@ -186,6 +197,7 @@ class window.PlotManager
 					src: src
 					style:
 						strokeColor: color
+					container: container
 				scope.plots[src] = plot
 			else
 				# console.log "loading cues", cues

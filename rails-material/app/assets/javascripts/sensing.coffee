@@ -72,32 +72,34 @@ window.handlers = (callback)->
 		callback()
 		window.code_legend = _.map cues, (c)-> return {code: parseInt(c.code), color: c.color}
 		window.code_legend = _.sortBy(_.unique(code_legend, (c)-> c.code), (e)-> e.code)
-		console.log "CL", code_legend
+		
+		# ADDING CODE TOGGLE BUTTONS
 		$(".codes").html("")
 		_.each code_legend, (cl)->
 			$('<button>').addClass(".ui.button").css('background', cl.color).html(cl.code).appendTo($(".codes")).click (e)->
 				console.log "TOGGLE", cl.code, plt.plots
 				if plt.plots.chromatogram
 					_.each plt.plots.chromatogram.getItems({code: cl.code}), (cw)-> cw.visible = !cw.visible
-				
+	.on "error", ()->
+		window.cues = []
+		console.log "No cues found."
+		$('.paper-plot.chromatimeline').trigger("load")			
 	vid = $('video')[0]
 	$('track').on "cuechange", (c) ->
-		cue = vid.textTracks[0].activeCues[0].data		
-		console.log("Track", cue)
-		if cue
-			if cue.color
-				$('.codeword').css 'background', cue.color
-			else
-				$('.codeword').css 'background', "black"
-			$('.codelabel').html "C" + cue.code + "<br>"+ cue.width
-	# 	myCues = @activeCues
-	# 	_.each myCues, (cue) ->
-	# 		$('#captions').html(cue.data.code).css 'background', cue.data.color
-	# 		return
-	# 	return
+		if vid.textTracks[0].activeCues.length > 0
+			cue = vid.textTracks[0].activeCues[0].data		
+			# console.log("Track", cue)
+			if cue
+				if cue.color
+					$('.codeword').css 'background', cue.color
+				else
+					$('.codeword').css 'background', "black"
+				$('.codelabel').html "C" + cue.code + "<br>"+ cue.width
+
 
 	$('#codebook-select').on 'change', (e)->
 		$('track').attr('src', $(this).val().replaceAll('111', activeUser))
+		console.log "Loading", activeUser
 		$(this).parents(".segment").find('.paper-plot').trigger('load')
 		cb = $(this).val().split("/")[3].split("_")[0]
 		

@@ -28,7 +28,7 @@ window.loadFile = (user, feature, callback)->
 	path = ["", "irb", user, feature+"_"+user+".json"]
 	$.getJSON path.join("/"), (data)->
 		callback(data)
-
+	
 
 class window.UIManager
 	constructor: ()->
