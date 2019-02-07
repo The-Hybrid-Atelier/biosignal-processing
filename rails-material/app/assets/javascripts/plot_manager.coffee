@@ -137,6 +137,7 @@ class window.Plot extends paper.Group
 			_.each cues, (c)->
 				if c.code != "0" 
 					r = new paper.Path.Rectangle
+						code: parseInt(c.code)
 						parent: scope
 						size: [10 * c.width, paper.plot.height * 0.9]
 						fillColor: c.color
@@ -157,7 +158,8 @@ class window.PlotManager
 		$(".paper-plot").trigger(event)
 
 	constructor: ()->
-
+		scope = this
+		this.plots = {}
 		$(".paper-plot").on "load", (e)->
 			container = $(this)
 			src = container.attr('src')
@@ -173,8 +175,9 @@ class window.PlotManager
 				if area.length > 0
 					area[0].goTo(e.p)
 
-				
+			
 			plot = new Plot()
+			
 			plot.init
 				fillColor: "white"
 
@@ -183,9 +186,11 @@ class window.PlotManager
 					src: src
 					style:
 						strokeColor: color
+				scope.plots[src] = plot
 			else
-				console.log "loading cues", cues
+				# console.log "loading cues", cues
 				plot.load_cues
 					cues: cues
+				scope.plots["chromatogram"] = plot
 
 			

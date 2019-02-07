@@ -11,6 +11,19 @@ html, body{
 	height: 100%;
 	
 }
+.codes{
+	margin-top: 25px;
+}
+.cchar{
+	max-width: 30%;
+	&.full{
+		max-width: 100%;
+	}
+	img{
+		width: 100%;
+	}
+
+}
 .cgram{
 	max-width: 30%;
 	&.full{
