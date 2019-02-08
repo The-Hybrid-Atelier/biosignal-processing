@@ -258,7 +258,7 @@
 
 	#notes-display.ui.segment.blue
 		%select.ui.fluid.dropdown
-		#notes.ui.segment
+		#notes.ui{"content-editable": true}
 			From retrospective think aloud
 
 :coffeescript
@@ -270,3 +270,5 @@
 					window.plt = new PlotManager()
 					$(".paper-plot").trigger('load')
 				$('#'+111).click() # DEFAULT USER
+		$("#notes").on 'mousedown', (e)->
+			e.stopPropagation()
