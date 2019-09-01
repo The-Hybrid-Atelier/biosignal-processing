@@ -267,6 +267,11 @@
 
 :coffeescript
 	$ ->
+		window.getImage = (id, name)->
+			canvas = $('#view-'+id)[0]
+			canvas.toBlob (blob)->
+			    saveAs(blob, name+".png")
+
 		window.pm = new ProfileManager
 			onLoad: ()->
 				handlers ()->
