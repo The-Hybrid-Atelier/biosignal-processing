@@ -7,3 +7,4 @@ Processing pipeline for the Emotibit Biosignal Wristbands
 * Cesar Torres
 * Matthew Joerke
 * Dema Elansari
+* Cherryl Maria Bibin
