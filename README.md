@@ -1,5 +1,7 @@
-# program-as-material
-Project repo - Cesar
+# biosignal processing
+
+Processing pipeline for the Emotibit Biosignal Wristbands
+
 
 # Contributors
 * Cesar Torres
