@@ -4,3 +4,4 @@ Project repo - Cesar
 # Contributors
 * Cesar Torres
 * Matthew Joerke
+* Dema Elansari
