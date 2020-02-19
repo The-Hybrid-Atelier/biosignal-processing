@@ -9,3 +9,4 @@ Focus on processing emotion data.
 * Matthew Joerke
 * Dema Elansari
 * Cherryl Maria Bibin
+* Ruta Vaghasia
